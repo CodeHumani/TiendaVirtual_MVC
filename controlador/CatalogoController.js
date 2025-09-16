@@ -56,28 +56,19 @@ class CatalogoController extends Controller {
             const filtros = {};
             if (buscar) filtros.buscar = buscar;
             if (categoriaParam) filtros.categoria_id = parseInt(categoriaParam);
-
-            // Obtener categorías para el filtro
             const categorias = await this.categoriaModel.getAll();
-
-            // Obtener productos con filtros (ordenamiento soportado por el modelo)
             const productosFiltrados = await this.productoModel.obtenerConFiltros(filtros, sortBy);
-
-            // Paginación en memoria (rápida de implementar). Si se requiere, mover a SQL con LIMIT/OFFSET
             const totalProductos = productosFiltrados.length;
             const totalPages = Math.max(Math.ceil(totalProductos / limit), 1);
             const currentPage = Math.min(page, totalPages);
             const offset = (currentPage - 1) * limit;
             const productos = productosFiltrados.slice(offset, offset + limit);
-
             res.render('catalogo/productos', {
                 title: `Catálogo para ${cliente.nombre}`,
                 cliente,
                 productos,
                 categorias,
-                // Para compatibilidad con vista anterior
                 filtros: { buscar },
-                // Nuevos parámetros de UI
                 search: buscar,
                 categoriaId: filtros.categoria_id || '',
                 sortBy,
@@ -328,7 +319,6 @@ class CatalogoController extends Controller {
         return mensaje;
     }
 
-    // Generar PDF del catálogo (método buffer)
     async generarPDF(req, res) {
         try {
             const { clienteId, productos: productosSeleccionadosRaw } = req.body;
