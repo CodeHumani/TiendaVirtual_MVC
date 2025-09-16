@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Tienda Virtual</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/energetic.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store"></i> Tienda Virtual MVC
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/categorias">
+                            <i class="fas fa-tags"></i> Categorías
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/productos">
+                            <i class="fas fa-box"></i> Productos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clientes">
+                            <i class="fas fa-users"></i> Clientes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ventas">
+                            <i class="fas fa-shopping-cart"></i> Ventas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/catalogo">
+                            <i class="fas fa-book"></i> Catálogo
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="container mt-4">
+        <!-- Encabezado -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 text-dark mb-1">
+                            <i class="fas fa-box text-primary"></i> Gestión de Productos
+                        </h1>
+                    <p class="text-muted mb-0">Administra el catálogo de productos de tu tienda</p>
+                </div>
+                <a href="/productos/crear" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus"></i> Nuevo Producto
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-box fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                    <h3 class="card-title h4 mb-1"><%= estadisticas.total %></h3>
+                    <p class="card-text text-muted mb-0">Total Productos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                    <h3 class="card-title h4 mb-1"><%= estadisticas.activos %></h3>
+                    <p class="card-text text-muted mb-0">Productos Activos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                    <h3 class="card-title h4 mb-1"><%= estadisticas.stockBajo %></h3>
+                    <p class="card-text text-muted mb-0">Stock Bajo</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 p-3">
+                            <i class="fas fa-pause-circle fa-2x text-secondary"></i>
+                        </div>
+                    </div>
+                    <h3 class="card-title h4 mb-1"><%= estadisticas.inactivos %></h3>
+                    <p class="card-text text-muted mb-0">Productos Inactivos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" action="/productos" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="categoria" class="form-label">
+                                <i class="fas fa-tags"></i> Filtrar por Categoría
+                            </label>
+                            <select name="categoria" id="categoria" class="form-select">
+                                <option value="todas" <%= filtros.categoria === 'todas' ? 'selected' : '' %>>
+                                    Todas las categorías
+                                </option>
+                                <% categorias.forEach(categoria => { %>
+                                <option value="<%= categoria.id %>" 
+                                        <%= filtros.categoria == categoria.id ? 'selected' : '' %>>
+                                    <%= categoria.nombre %>
+                                </option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="buscar" class="form-label">
+                                <i class="fas fa-search"></i> Buscar Producto
+                            </label>
+                            <input type="text" 
+                                   name="buscar" 
+                                   id="buscar"
+                                   class="form-control" 
+                                   placeholder="Buscar por nombre, descripción o categoría..."
+                                   value="<%= filtros.buscar %>">
+                        </div>
+                        
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Productos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list"></i> Lista de Productos
+                        <span class="badge bg-primary ms-2"><%= productos.length %></span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <% if (productos.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="text-center">Imagen</th>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Categoría</th>
+                                    <th scope="col" class="text-end">Precio</th>
+                                    <th scope="col" class="text-center">Stock</th>
+                                    <th scope="col" class="text-center">Estado</th>
+                                    <th scope="col" class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% productos.forEach(producto => { %>
+                                <tr>
+                                    <td class="text-center align-middle">
+                                        <% if (producto.imagen) { %>
+                                        <img src="/uploads/productos/<%= producto.imagen %>" 
+                                             alt="<%= producto.nombre %>"
+                                             class="rounded"
+                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                        <% } else { %>
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle">
+                                        <div>
+                                            <h6 class="mb-0"><%= producto.nombre %></h6>
+                                            <small class="text-muted">
+                                                <%= (producto.descripción && producto.descripción.length > 50) ? 
+                                                    producto.descripción.substring(0, 50) + '...' : 
+                                                    (producto.descripción || 'Sin descripción') %>
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        <% if (producto.categoria_nombre) { %>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-tag"></i> <%= producto.categoria_nombre %>
+                                        </span>
+                                        <% } else { %>
+                                        <span class="badge bg-secondary">Sin categoría</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        <strong class="text-primary">$<%= producto.precio.toLocaleString() %></strong>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <% if (producto.cantidad <= 0) { %>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> Agotado
+                                        </span>
+                                        <% } else if (producto.cantidad < 10) { %>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> <%= producto.cantidad %>
+                                        </span>
+                                        <% } else { %>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> <%= producto.cantidad %>
+                                        </span>
+                                        <% } %>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Activo
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <div class="btn-group" role="group">
+                                            <a href="/productos/<%= producto.id %>" 
+                                               class="btn btn-sm btn-outline-info"
+                                               title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/productos/<%= producto.id %>/editar" 
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-danger btn-eliminar"
+                                                    data-id="<%= producto.id %>"
+                                                    data-nombre="<%= producto.nombre %>"
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } else { %>
+                    <div class="text-center py-5">
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No se encontraron productos</h5>
+                        <p class="text-muted mb-3">No hay productos que coincidan con los filtros aplicados.</p>
+                        <a href="/productos/crear" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Primer Producto
+                        </a>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning"></i> Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar el producto <strong id="nombreProducto"></strong>?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> Esta acción no se puede deshacer.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmarEliminar">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let productoAEliminar = null;
+
+    // Event listener para botones de eliminar
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-eliminar')) {
+            const btn = e.target.closest('.btn-eliminar');
+            const id = btn.dataset.id;
+            const nombre = btn.dataset.nombre;
+            eliminarProducto(id, nombre);
+        }
+    });
+
+    function eliminarProducto(id, nombre) {
+        productoAEliminar = id;
+        document.getElementById('nombreProducto').textContent = nombre;
+        new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    }
+
+    document.getElementById('confirmarEliminar').addEventListener('click', async function() {
+        if (!productoAEliminar) return;
+
+        try {
+            const response = await fetch(`/productos/${productoAEliminar}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('modalEliminar')).hide();
+                
+                // Mostrar mensaje de éxito
+                const alertContainer = document.createElement('div');
+                alertContainer.innerHTML = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> ${result.mensaje}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                document.body.insertBefore(alertContainer, document.body.firstChild);
+                
+                // Recargar la página después de un momento
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                throw new Error(result.mensaje);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al eliminar el producto: ' + error.message);
+        }
+    });
+
+    // Auto-envío del formulario de filtros al cambiar la categoría
+    document.getElementById('categoria').addEventListener('change', function() {
+        this.form.submit();
+    });
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/motivational-effects.js"></script>
+</main>
+</body>
+</html>

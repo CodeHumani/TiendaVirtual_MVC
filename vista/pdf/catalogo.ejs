@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - <%= cliente.nombre %></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        
+        .quality-message {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .cliente-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid #007bff;
+        }
+        
+        .cliente-info h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .fecha-catalogo {
+            text-align: right;
+            color: #6c757d;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .productos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .producto-card {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .producto-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .producto-imagen {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f8f9fa;
+        }
+        
+        .producto-imagen-placeholder {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #6c757d, #adb5bd);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .producto-info {
+            padding: 20px;
+        }
+        
+        .producto-nombre {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+        }
+        
+        .producto-descripcion {
+            color: #6c757d;
+            margin-bottom: 15px;
+            min-height: 60px;
+            line-height: 1.5;
+        }
+        
+        .producto-precio {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .producto-precio::before {
+            content: '$';
+            color: #28a745;
+        }
+        
+        .producto-stock {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .stock-disponible {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .stock-agotado {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+            color: #6c757d;
+        }
+        
+        .footer h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .resumen {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .resumen-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            text-align: center;
+        }
+        
+        .resumen-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .resumen-numero {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .resumen-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+            
+            .producto-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🛍️ Tienda Virtual MVC</h1>
+            <div class="subtitle">Catálogo Personalizado</div>
+        </div>
+        
+        <!-- Mensaje de Calidad -->
+        <div class="quality-message">
+            ✨ Productos de Calidad y Seguros ✨
+        </div>
+        
+        <!-- Información del Cliente -->
+        <div class="cliente-info">
+            <h3>📋 Información del Cliente</h3>
+            <p><strong>Nombre:</strong> <%= cliente.nombre %></p>
+            <p><strong>WhatsApp:</strong> <%= cliente.celular %></p>
+            <% if (cliente.correo) { %>
+                <p><strong>Correo:</strong> <%= cliente.correo %></p>
+            <% } %>
+        </div>
+        
+        <!-- Fecha del Catálogo -->
+        <div class="fecha-catalogo">
+            📅 Catálogo generado el <%= new Date().toLocaleDateString('es-GT', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            }) %>
+        </div>
+        
+        <!-- Resumen -->
+        <div class="resumen">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #007bff;">📊 Resumen del Catálogo</h3>
+            <div class="resumen-grid">
+                <div class="resumen-item">
+                    <div class="resumen-numero"><%= productos.length %></div>
+                    <div class="resumen-label">Productos Seleccionados</div>
+                </div>
+                <div class="resumen-item">
+                    <div class="resumen-numero"><%= productos.filter(p => (p.stock || p.cantidad || 0) > 0).length %></div>
+                    <div class="resumen-label">Disponibles</div>
+                </div>
+                <div class="resumen-item">
+                    <div class="resumen-numero">$<%= productos.reduce((total, p) => total + parseFloat(p.precio || 0), 0).toLocaleString() %></div>
+                    <div class="resumen-label">Valor Total</div>
+                </div>
+                <div class="resumen-item">
+                    <div class="resumen-numero"><%= [...new Set(productos.map(p => p.categoria_id))].length %></div>
+                    <div class="resumen-label">Categorías</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Productos -->
+        <div class="productos-grid">
+            <% productos.forEach((producto, index) => { %>
+                <div class="producto-card">
+                    <% if (producto.imagenBase64) { %>
+                        <img src="<%= producto.imagenBase64 %>" alt="<%= producto.nombre %>" class="producto-imagen">
+                    <% } else if (producto.imagen && producto.imagen.trim() !== '') { %>
+                        <div class="producto-imagen-placeholder">
+                            📷 Imagen no disponible
+                        </div>
+                    <% } else { %>
+                        <div class="producto-imagen-placeholder">
+                            📷 Sin Imagen
+                        </div>
+                    <% } %>
+                    
+                    <div class="producto-info">
+                        <div class="producto-nombre">
+                            <%= index + 1 %>. <%= producto.nombre %>
+                        </div>
+                        
+                        <div class="producto-descripcion">
+                            <%= producto.descripcion || 'Producto de alta calidad disponible en nuestra tienda.' %>
+                        </div>
+                        
+                        <div class="producto-precio">
+                            <%= parseFloat(producto.precio || 0).toLocaleString() %>
+                        </div>
+                        
+                        <% const stock = producto.stock || producto.cantidad || 0; %>
+                        <div class="producto-stock <%= stock > 0 ? 'stock-disponible' : 'stock-agotado' %>">
+                            <% if (stock > 0) { %>
+                                ✅ Disponible (<%= stock %> unidades)
+                            <% } else { %>
+                                ❌ Temporalmente agotado
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <h3>🏪 Tienda Virtual MVC</h3>
+            <p>Gracias por confiar en nosotros para sus compras</p>
+            <p>📱 Contáctanos por WhatsApp para realizar tu pedido</p>
+            <p style="font-size: 0.9em; margin-top: 15px;">
+                <em>Este catálogo fue generado automáticamente • <%= new Date().toLocaleString('es-GT') %></em>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

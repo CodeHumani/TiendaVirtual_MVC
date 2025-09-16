@@ -1,0 +1,73 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Caches
+.cache/
+.eslintcache
+.stylelintcache
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+.tmp/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors/IDE
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Local tooling
+/.history/
+/.vercel/
+/.netlify/
+
+# Project-specific notes
+# NOTE: Uploads and PDFs are tracked in Git per project preference.
+# If you later want to ignore these, reintroduce patterns for public/uploads, public/temp, or *.pdf
+
+# Ignore any private keys just in case
+*.pem
+*.key
+*.crt

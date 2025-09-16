@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - <%= cliente.nombre %></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .quality-message {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .cliente-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid #007bff;
+        }
+        
+        .fecha-catalogo {
+            text-align: right;
+            color: #6c757d;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .productos-lista {
+            margin-bottom: 30px;
+        }
+        
+        .producto-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .producto-imagen {
+            flex: 0 0 100px;
+        }
+        
+        .producto-imagen img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .producto-imagen .sin-imagen {
+            width: 100px;
+            height: 100px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .producto-info {
+            flex: 1;
+        }
+        
+        .producto-nombre {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .producto-descripcion {
+            color: #6c757d;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .producto-precio {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .producto-stock {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            background: #d4edda;
+            color: #155724;
+            display: inline-block;
+        }
+        
+        .stock-agotado {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+            color: #6c757d;
+        }
+        
+        .resumen {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .resumen-items {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .resumen-item {
+            margin: 10px;
+        }
+        
+        .resumen-numero {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .resumen-label {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛍️ Tienda Virtual MVC</h1>
+        <p>Catálogo Personalizado</p>
+    </div>
+    
+    <div class="quality-message">
+        ✨ Productos de Calidad y Seguros ✨
+    </div>
+    
+    <div class="cliente-info">
+        <h3>📋 Información del Cliente</h3>
+        <p><strong>Nombre:</strong> <%= cliente.nombre %></p>
+        <p><strong>WhatsApp:</strong> <%= cliente.celular %></p>
+        <% if (cliente.correo) { %>
+            <p><strong>Correo:</strong> <%= cliente.correo %></p>
+        <% } %>
+    </div>
+    
+    <div class="fecha-catalogo">
+        📅 Catálogo generado el <%= new Date().toLocaleDateString('es-GT', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        }) %>
+    </div>
+    
+    <div class="resumen">
+        <h3>📊 Resumen del Catálogo</h3>
+        <div class="resumen-items">
+            <div class="resumen-item">
+                <div class="resumen-numero"><%= productos.length %></div>
+                <div class="resumen-label">Productos</div>
+            </div>
+            <div class="resumen-item">
+                <div class="resumen-numero"><%= productos.filter(p => (p.stock || p.cantidad || 0) > 0).length %></div>
+                <div class="resumen-label">Disponibles</div>
+            </div>
+            <div class="resumen-item">
+                <div class="resumen-numero">$<%= productos.reduce((total, p) => total + parseFloat(p.precio || 0), 0).toLocaleString() %></div>
+                <div class="resumen-label">Valor Total</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="productos-lista">
+        <% productos.forEach((producto, index) => { %>
+            <div class="producto-item">
+                <div class="producto-imagen">
+                    <% if (producto.imagenBase64) { %>
+                        <img src="<%= producto.imagenBase64 %>" alt="<%= producto.nombre %>" />
+                    <% } else { %>
+                        <div class="sin-imagen">
+                            Sin imagen
+                        </div>
+                    <% } %>
+                </div>
+                
+                <div class="producto-info">
+                    <div class="producto-nombre">
+                        <%= index + 1 %>. <%= producto.nombre %>
+                    </div>
+                    
+                    <div class="producto-descripcion">
+                        <%= producto.descripcion || 'Producto de alta calidad disponible en nuestra tienda.' %>
+                    </div>
+                    
+                    <div class="producto-precio">
+                        $<%= parseFloat(producto.precio || 0).toLocaleString() %>
+                    </div>
+                    
+                    <% const stock = producto.stock || producto.cantidad || 0; %>
+                    <div class="producto-stock <%= stock > 0 ? '' : 'stock-agotado' %>">
+                        <% if (stock > 0) { %>
+                            ✅ Disponible (<%= stock %> unidades)
+                        <% } else { %>
+                            ❌ Temporalmente agotado
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    </div>
+    
+    <div class="footer">
+        <h3>🏪 Tienda Virtual MVC</h3>
+        <p>Gracias por confiar en nosotros para sus compras</p>
+        <p>📱 Contáctanos por WhatsApp para realizar tu pedido</p>
+        <p style="font-size: 0.9em; margin-top: 15px;">
+            <em>Este catálogo fue generado automáticamente • <%= new Date().toLocaleString('es-GT') %></em>
+        </p>
+    </div>
+</body>
+</html>

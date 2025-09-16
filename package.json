@@ -1,0 +1,36 @@
+{
+  "name": "tienda-virtual-mvc",
+  "version": "1.0.0",
+  "description": "Sistema de tienda virtual con MVC en Node.js - Proyecto académico",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "mvc",
+    "tienda",
+    "whatsapp",
+    "nodejs",
+    "pg"
+  ],
+  "author": "Estudiante",
+  "license": "MIT",
+  "dependencies": {
+    "connect-flash": "^0.1.1",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.18.2",
+    "method-override": "^3.0.0",
+    "multer": "^1.4.4",
+    "pdfkit": "^0.13.0",
+    "pg": "^8.11.3",
+    "puppeteer": "^24.20.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.22.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

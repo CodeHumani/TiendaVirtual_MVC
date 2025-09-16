@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <%= title %> - Tienda Virtual
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-store"></i> Tienda Virtual MVC</a>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h2>
+                    <%= title %>
+                </h2>
+                <p>Cliente: <%= cliente.nombre %> | WhatsApp: <%= cliente.celular %>
+                </p>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/" class="text-white">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="/catalogo" class="text-white">Catálogo</a></li>
+                        <li class="breadcrumb-item active text-white">Productos</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" action="/catalogo/productos/<%= cliente.id %>">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" name="buscar" value="<%= filtros.buscar %>"
+                                placeholder="Buscar productos...">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">Buscar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <% if (productos.length===0) { %>
+                <div class="col-12 text-center py-5">
+                    <h5>No se encontraron productos</h5>
+                    <a href="/catalogo/productos/<%= cliente.id %>" class="btn btn-primary">Ver Todos</a>
+                </div>
+                <% } else { %>
+                    <% productos.forEach(producto=> { %>
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>
+                                        <%= producto.nombre %>
+                                    </h6>
+                                    <p>
+                                        <%= producto.descripcion || 'Sin descripción' %>
+                                    </p>
+                                    <p><strong>$<%= parseFloat(producto.precio).toLocaleString() %></strong></p>
+                                    <div class="form-check">
+                                        <input class="form-check-input producto-checkbox" type="checkbox"
+                                            value="<%= producto.id %>" id="producto_<%= producto.id %>">
+                                        <label class="form-check-label"
+                                            for="producto_<%= producto.id %>">Seleccionar</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% }); %>
+                            <% } %>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="button" class="btn btn-info me-2" id="previsualizarMensaje" disabled>
+                <i class="fas fa-eye"></i> Previsualizar Mensaje
+            </button>
+            <button type="button" class="btn btn-warning me-2" id="generarPDFEstatico" disabled>
+                <i class="fas fa-download"></i> Generar PDF (Archivo)
+            </button>
+            <button type="button" class="btn btn-success btn-lg" id="enviarCatalogo" disabled>
+                <i class="fab fa-whatsapp"></i> Enviar por WhatsApp (<span id="contador">0</span>)
+            </button>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let productosSeleccionados = [];
+
+        // Función para actualizar estado de botones
+        function actualizarBotones() {
+            const cantidad = productosSeleccionados.length;
+            const contadorElement = document.getElementById('contador');
+            const enviarBtn = document.getElementById('enviarCatalogo');
+            const previsualizarBtn = document.getElementById('previsualizarMensaje');
+            const pdfBtn = document.getElementById('generarPDF');
+            const pdfEstaticoBtn = document.getElementById('generarPDFEstatico');
+
+            if (contadorElement) {
+                contadorElement.textContent = cantidad;
+            }
+            if (enviarBtn) {
+                enviarBtn.disabled = cantidad === 0;
+            }
+            if (previsualizarBtn) {
+                previsualizarBtn.disabled = cantidad === 0;
+            }
+            if (pdfBtn) {
+                pdfBtn.disabled = cantidad === 0;
+            }
+            if (pdfEstaticoBtn) {
+                pdfEstaticoBtn.disabled = cantidad === 0;
+            }
+        }
+
+        // Inicializar eventos para checkboxes de productos
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkboxes = document.querySelectorAll('.producto-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        productosSeleccionados.push(this.value);
+                    } else {
+                        productosSeleccionados = productosSeleccionados.filter(id => id !== this.value);
+                    }
+                    actualizarBotones();
+                });
+            });
+            const enviarBtn = document.getElementById('enviarCatalogo');
+            if (enviarBtn) {
+                enviarBtn.addEventListener('click', function () {
+                    if (productosSeleccionados.length === 0) {
+                        alert('Selecciona al menos un producto');
+                        return;
+                    }
+                    const btn = this;
+                    const originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando envío...';
+
+                    console.log('🚀 Enviando catálogo con PDF:', {
+                        clienteId: '<%= cliente.id %>',
+                        productos: productosSeleccionados
+                    });
+                    fetch('/catalogo/enviar-whatsapp-pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            clienteId: '<%= cliente.id %>',
+                            productos: productosSeleccionados
+                        })
+                    })
+                        .then(response => {
+                            console.log('📡 Respuesta del servidor:', response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                const whatsappWindow = window.open(data.url, '_blank');
+                                const clienteNombre = '<%= cliente.nombre %>';
+                                const mensaje = '✅ Mensaje de WhatsApp preparado!\\n\\n📄 PDF generado: ' + data.pdfFilename + '\\n👤 Cliente: ' + clienteNombre + '\\n📱 WhatsApp: ' + data.numeroWhatsApp + '\\n\\n¿Quieres ver las instrucciones para enviar el PDF manualmente por WhatsApp?\\n\\n(El PDF contiene todas las imágenes de los productos)';
+                                const enviarPDF = confirm(mensaje);
+                                if (enviarPDF) {
+                                    const instruccionesUrl = '/catalogo/instrucciones-pdf?pdfPath=' + encodeURIComponent(data.pdfUrl) + '&clienteNombre=' + encodeURIComponent(clienteNombre) + '&numeroWhatsApp=' + encodeURIComponent(data.numeroWhatsApp);
+                                    window.open(instruccionesUrl, '_blank');
+                                }
+                                productosSeleccionados = [];
+                                document.querySelectorAll('.producto-checkbox').forEach(cb => cb.checked = false);
+                                actualizarBotones();
+                            } else {
+                                console.error('❌ Error del servidor:', data.message);
+                                alert('Error: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('💥 Error de conexión:', error);
+                            alert('Error de conexión. Verifica tu internet e intenta nuevamente.');
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        });
+                });
+            }
+            const previsualizarBtn = document.getElementById('previsualizarMensaje');
+            if (previsualizarBtn) {
+                previsualizarBtn.addEventListener('click', function () {
+                    if (productosSeleccionados.length === 0) {
+                        alert('Selecciona al menos un producto');
+                        return;
+                    }
+                    fetch('/catalogo/enviar-whatsapp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            clienteId: '<%= cliente.id %>',
+                            productos: productosSeleccionados
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const mensaje = `VISTA PREVIA DEL MENSAJE:\n\n${data.mensaje}\n\n---\nCliente: ${data.clienteNombre}\nNúmero de destino: ${data.numeroWhatsApp}\nNúmero de la tienda: ${data.numeroRemitente}\nProductos seleccionados: ${data.productosEnviados}`;
+                                alert(mensaje);
+                            } else {
+                                alert('Error: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error al generar vista previa');
+                        });
+                });
+            }
+
+            // Evento para generar PDF
+            const pdfBtn = document.getElementById('generarPDF');
+            if (pdfBtn) {
+                pdfBtn.addEventListener('click', function () {
+                    if (productosSeleccionados.length === 0) {
+                        alert('Selecciona al menos un producto para generar el PDF');
+                        return;
+                    }
+                    const btn = this;
+                    const originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+
+                    console.log('📄 Generando PDF del catálogo:', {
+                        clienteId: '<%= cliente.id %>',
+                        productos: productosSeleccionados
+                    });
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/catalogo/generar-pdf';
+                    form.style.display = 'none';
+                    const clienteIdInput = document.createElement('input');
+                    clienteIdInput.type = 'hidden';
+                    clienteIdInput.name = 'clienteId';
+                    clienteIdInput.value = '<%= cliente.id %>';
+                    form.appendChild(clienteIdInput);
+                    const productosInput = document.createElement('input');
+                    productosInput.type = 'hidden';
+                    productosInput.name = 'productos';
+                    productosInput.value = JSON.stringify(productosSeleccionados);
+                    form.appendChild(productosInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        alert(`✅ PDF generado exitosamente!\n\nSe ha descargado el catálogo con ${productosSeleccionados.length} productos seleccionados.`);
+                    }, 2000);
+                });
+            }
+
+            // Evento para generar PDF estático
+            const pdfEstaticoBtn = document.getElementById('generarPDFEstatico');
+            if (pdfEstaticoBtn) {
+                pdfEstaticoBtn.addEventListener('click', function () {
+                    if (productosSeleccionados.length === 0) {
+                        alert('Selecciona al menos un producto para generar el PDF');
+                        return;
+                    }
+                    const btn = this;
+                    const originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando PDF...';
+
+                    console.log('📄 Generando PDF estático del catálogo:', {
+                        clienteId: '<%= cliente.id %>',
+                        productos: productosSeleccionados
+                    });
+                    fetch('/catalogo/generar-pdf-estatico', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            clienteId: '<%= cliente.id %>',
+                            productos: productosSeleccionados
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const a = document.createElement('a');
+                                a.href = data.downloadUrl;
+                                a.download = data.filename;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                alert(`✅ PDF generado exitosamente!\n\nSe ha descargado el catálogo con ${productosSeleccionados.length} productos seleccionados.`);
+                            } else {
+                                alert('❌ Error al generar el PDF: ' + (data.message || 'Error desconocido'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('❌ Error al generar el PDF');
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        });
+                });
+            }
+            actualizarBotones();
+        });
+    </script>
+</body>
+
+</html>

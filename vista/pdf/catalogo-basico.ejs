@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Catálogo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+        .header h1 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .quality-message {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        .cliente-info {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+        .producto {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .producto-imagen {
+            flex: 0 0 120px;
+        }
+        .producto-imagen img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .producto-imagen .sin-imagen {
+            width: 120px;
+            height: 120px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .producto-info {
+            flex: 1;
+        }
+        .producto-nombre {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .producto-precio {
+            font-size: 1.3em;
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .producto-descripcion {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .producto-stock {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tienda Virtual MVC</h1>
+        <p>Catálogo Personalizado</p>
+    </div>
+    
+    <div class="quality-message">
+        Productos de Calidad y Seguros
+    </div>
+    
+    <div class="cliente-info">
+        <h3>Información del Cliente</h3>
+        <p><strong>Nombre:</strong> <%= cliente.nombre %></p>
+        <p><strong>WhatsApp:</strong> <%= cliente.celular %></p>
+        <% if (cliente.correo) { %>
+            <p><strong>Correo:</strong> <%= cliente.correo %></p>
+        <% } %>
+    </div>
+    
+    <p style="text-align: right; color: #666; margin-bottom: 20px;">
+        Catálogo generado: <%= new Date().toLocaleDateString('es-GT') %>
+    </p>    
+    <% productos.forEach((producto, index) => { %>
+        <div class="producto">
+            <div class="producto-imagen">
+                <% if (producto.imagenBase64) { %>
+                    <img src="<%= producto.imagenBase64 %>" alt="<%= producto.nombre %>" />
+                <% } else { %>
+                    <div class="sin-imagen">
+                        Sin imagen
+                    </div>
+                <% } %>
+            </div>
+            
+            <div class="producto-info">
+                <div class="producto-nombre">
+                    <%= index + 1 %>. <%= producto.nombre %>
+                </div>
+                
+                <div class="producto-precio">
+                    $<%= parseFloat(producto.precio || 0).toLocaleString() %>
+                </div>
+                
+                <div class="producto-descripcion">
+                    <%= producto.descripcion || 'Producto de calidad disponible en nuestra tienda.' %>
+                </div>
+                
+                <% const stock = producto.stock || producto.cantidad || 0; %>
+                <div class="producto-stock">
+                    <% if (stock > 0) { %>
+                        Disponible: <%= stock %> unidades
+                    <% } else { %>
+                        Temporalmente agotado
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+    
+    <div class="footer">
+        <h3>Tienda Virtual MVC</h3>
+        <p>Gracias por su preferencia</p>
+        <p>Contáctanos por WhatsApp para realizar tu pedido</p>
+        <p style="font-size: 0.8em; margin-top: 10px;">
+            Catálogo generado automáticamente - <%= new Date().toLocaleString('es-GT') %>
+        </p>
+    </div>
+</body>
+</html>

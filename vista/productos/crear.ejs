@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Producto - Tienda Virtual</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/energetic.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store"></i> Tienda Virtual MVC
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/categorias">
+                            <i class="fas fa-tags"></i> Categorías
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/productos">
+                            <i class="fas fa-box"></i> Productos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clientes">
+                            <i class="fas fa-users"></i> Clientes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ventas">
+                            <i class="fas fa-shopping-cart"></i> Ventas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/catalogo">
+                            <i class="fas fa-book"></i> Catálogo
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="container mt-4">
+        <!-- Encabezado -->
+        <div class="row mb-4">
+            <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 text-dark mb-1">
+                        <i class="fas fa-plus text-primary"></i> Crear Nuevo Producto
+                    </h1>
+                    <p class="text-muted mb-0">Agrega un nuevo producto al catálogo de tu tienda</p>
+                </div>
+                <a href="/productos" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Productos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mostrar errores si existen -->
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> <strong>Error:</strong> <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Formulario -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-box"></i> Información del Producto
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="/productos" method="POST" enctype="multipart/form-data" novalidate>
+                        <!-- Información Básica -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle"></i> Información Básica
+                                </h6>
+                            </div>
+                        </div>
+
+                        <!-- Nombre del Producto -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nombre" class="form-label">
+                                    <i class="fas fa-tag"></i> Nombre del Producto <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="nombre" 
+                                       name="nombre" 
+                                       value="<%= producto.nombre || '' %>"
+                                       required
+                                       maxlength="100">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Nombre único del producto (máximo 100 caracteres)
+                                </div>
+                            </div>
+                            
+                            <!-- Categoría -->
+                            <div class="col-md-6">
+                                <label for="categoria_id" class="form-label">
+                                    <i class="fas fa-tags"></i> Categoría <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="categoria_id" name="categoria_id" required>
+                                    <option value="">Seleccionar categoría...</option>
+                                    <% categorias.forEach(categoria => { %>
+                                    <option value="<%= categoria.id %>" 
+                                            <%= (producto.categoria_id == categoria.id) ? 'selected' : '' %>>
+                                        <%= categoria.nombre %>
+                                    </option>
+                                    <% }); %>
+                                </select>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Categoría a la que pertenece el producto
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">
+                                <i class="fas fa-align-left"></i> Descripción <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" 
+                                      id="descripcion" 
+                                      name="descripcion" 
+                                      rows="4" 
+                                      required
+                                      maxlength="500"><%= producto.descripcion || '' %></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i> Descripción detallada del producto (máximo 500 caracteres)
+                            </div>
+                        </div>
+
+                        <!-- Precios y Stock -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-dollar-sign"></i> Precio y Stock
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <!-- Precio -->
+                            <div class="col-md-6">
+                                <label for="precio" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Precio <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="precio" 
+                                           name="precio" 
+                                           value="<%= producto.precio || '' %>"
+                                           min="0.01"
+                                           max="999999.99"
+                                           step="0.01"
+                                           required>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Precio de venta del producto
+                                </div>
+                            </div>
+                            
+                            <!-- Stock -->
+                            <div class="col-md-6">
+                                <label for="stock" class="form-label">
+                                    <i class="fas fa-boxes"></i> Stock Inicial <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="stock" 
+                                       name="stock" 
+                                       value="<%= producto.cantidad || '' %>"
+                                       min="0"
+                                       max="999999"
+                                       required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Cantidad disponible en inventario
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Imagen -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-image"></i> Imagen del Producto
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="imagen" class="form-label">
+                                    <i class="fas fa-camera"></i> Imagen del Producto
+                                </label>
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="imagen" 
+                                       name="imagen"
+                                       accept="image/*">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Formatos permitidos: JPG, PNG, GIF, WebP (máximo 5MB)
+                                </div>
+                                
+                                <!-- Vista previa de imagen -->
+                                <div id="preview-container" class="mt-3" style="display: none;">
+                                    <div class="card">
+                                        <div class="card-body text-center p-2">
+                                            <p class="small text-muted mb-2">Vista previa:</p>
+                                            <img id="preview-image" src="" alt="Vista previa" class="img-fluid rounded" style="max-height: 150px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr class="mb-4">
+                                <div class="d-flex justify-content-between">
+                                    <a href="/productos" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save"></i> Crear Producto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Ayuda -->
+    <div class="row mt-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-lightbulb"></i> Consejos para crear productos
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Usa nombres descriptivos y únicos
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Incluye palabras clave en la descripción
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Selecciona la categoría correcta
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Establece precios competitivos
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Mantén el stock actualizado
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i> 
+                                    Usa imágenes de alta calidad
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Vista previa de imagen
+    document.getElementById('imagen').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        
+        if (file) {
+            // Validar tipo de archivo
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Tipo de archivo no permitido. Solo se permiten imágenes JPG, PNG, GIF y WebP.');
+                e.target.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Validar tamaño (5MB máximo)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('La imagen es demasiado grande. El tamaño máximo permitido es 5MB.');
+                e.target.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Mostrar vista previa
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    });
+
+    // Validación del formulario
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const precio = parseFloat(document.getElementById('precio').value);
+        const stock = parseInt(document.getElementById('stock').value);
+        
+        if (precio <= 0) {
+            e.preventDefault();
+            alert('El precio debe ser mayor a 0');
+            document.getElementById('precio').focus();
+            return;
+        }
+        
+        if (stock < 0) {
+            e.preventDefault();
+            alert('El stock no puede ser negativo');
+            document.getElementById('stock').focus();
+            return;
+        }
+    });
+
+    // Auto-resize del textarea
+    document.getElementById('descripcion').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/motivational-effects.js"></script>
+</main>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-pdf"></i> Instrucciones para Enviar PDF por WhatsApp
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>¡Importante!</strong> WhatsApp no puede enviar archivos PDF automáticamente desde el navegador. 
+                        Sigue estos pasos para enviar el PDF manualmente:
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">📱 Opción 1: WhatsApp Web</h5>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">
+                                    Abre <a href="https://web.whatsapp.com" target="_blank" class="text-primary">WhatsApp Web</a>
+                                </li>
+                                <li class="list-group-item">
+                                    Busca el contacto: <strong><%= clienteNombre %></strong>
+                                </li>
+                                <li class="list-group-item">
+                                    Haz clic en el ícono de 📎 (adjuntar)
+                                </li>
+                                <li class="list-group-item">
+                                    Selecciona "Documento"
+                                </li>
+                                <li class="list-group-item">
+                                    Busca y selecciona el PDF descargado
+                                </li>
+                                <li class="list-group-item">
+                                    Envía el archivo
+                                </li>
+                            </ol>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="text-success">📱 Opción 2: WhatsApp Móvil</h5>
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item">
+                                    Descarga el PDF en tu celular
+                                </li>
+                                <li class="list-group-item">
+                                    Abre WhatsApp en tu móvil
+                                </li>
+                                <li class="list-group-item">
+                                    Busca: <strong><%= clienteNombre %></strong>
+                                </li>
+                                <li class="list-group-item">
+                                    Toca el ícono de 📎 (adjuntar)
+                                </li>
+                                <li class="list-group-item">
+                                    Selecciona "Documento"
+                                </li>
+                                <li class="list-group-item">
+                                    Encuentra y envía el PDF
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-dark">📋 Información del Cliente:</h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><strong>Nombre:</strong> <%= clienteNombre %></li>
+                                        <li><strong>WhatsApp:</strong> <%= numeroWhatsApp %></li>
+                                        <li><strong>PDF Generado:</strong> <span class="text-success">✅ Listo para enviar</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <% if (pdfPath) { %>
+                            <a href="<%= pdfPath %>" class="btn btn-danger btn-lg me-3" download>
+                                <i class="fas fa-download"></i> Descargar PDF
+                            </a>
+                        <% } %>
+                        
+                        <a href="https://web.whatsapp.com" target="_blank" class="btn btn-success btn-lg me-3">
+                            <i class="fab fa-whatsapp"></i> Abrir WhatsApp Web
+                        </a>
+                        
+                        <a href="/catalogo" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-left"></i> Volver al Catálogo
+                        </a>
+                    </div>
+
+                    <div class="alert alert-warning mt-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Nota:</strong> El PDF contiene todas las imágenes y detalles de los productos seleccionados. 
+                        Una vez enviado por WhatsApp, el cliente podrá descargarlo y ver el catálogo completo.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-numbered {
+    counter-reset: section;
+}
+
+.list-group-numbered .list-group-item::before {
+    counter-increment: section;
+    content: counter(section) ". ";
+    font-weight: bold;
+    color: #007bff;
+}
+
+.list-group-numbered .list-group-item {
+    border-left: 3px solid #007bff;
+    margin-bottom: 2px;
+}
+</style>
