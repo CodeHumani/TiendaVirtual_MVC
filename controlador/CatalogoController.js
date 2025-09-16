@@ -44,16 +44,47 @@ class CatalogoController extends Controller {
                 req.flash('error', 'Cliente no encontrado');
                 return res.redirect('/catalogo');
             }
-            const productos = await this.productoModel.getAll();
+
+            // Parámetros de filtro/orden/paginación
+            const buscar = (req.query.buscar || '').toString();
+            const categoriaParam = (req.query.categoria || req.query.categoria_id || '').toString();
+            const sortBy = (req.query.sort || 'nombre_asc').toString();
+            const page = Math.max(parseInt(req.query.page) || 1, 1);
+            const limit = Math.min(Math.max(parseInt(req.query.limit) || 12, 1), 60);
+
+            // Mapear filtros hacia el modelo
+            const filtros = {};
+            if (buscar) filtros.buscar = buscar;
+            if (categoriaParam) filtros.categoria_id = parseInt(categoriaParam);
+
+            // Obtener categorías para el filtro
             const categorias = await this.categoriaModel.getAll();
+
+            // Obtener productos con filtros (ordenamiento soportado por el modelo)
+            const productosFiltrados = await this.productoModel.obtenerConFiltros(filtros, sortBy);
+
+            // Paginación en memoria (rápida de implementar). Si se requiere, mover a SQL con LIMIT/OFFSET
+            const totalProductos = productosFiltrados.length;
+            const totalPages = Math.max(Math.ceil(totalProductos / limit), 1);
+            const currentPage = Math.min(page, totalPages);
+            const offset = (currentPage - 1) * limit;
+            const productos = productosFiltrados.slice(offset, offset + limit);
+
             res.render('catalogo/productos', {
                 title: `Catálogo para ${cliente.nombre}`,
                 cliente,
                 productos,
                 categorias,
-                filtros: {
-                    buscar: req.query.buscar || ''
-                }
+                // Para compatibilidad con vista anterior
+                filtros: { buscar },
+                // Nuevos parámetros de UI
+                search: buscar,
+                categoriaId: filtros.categoria_id || '',
+                sortBy,
+                currentPage,
+                totalPages,
+                totalProductos,
+                limit
             });
         } catch (error) {
             console.error('Error al mostrar productos del catálogo:', error);

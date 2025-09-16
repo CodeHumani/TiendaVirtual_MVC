@@ -38,14 +38,45 @@
         <div class="card mb-4">
             <div class="card-body">
                 <form method="GET" action="/catalogo/productos/<%= cliente.id %>">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <input type="text" class="form-control" name="buscar" value="<%= filtros.buscar %>"
-                                placeholder="Buscar productos...">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Buscar</label>
+                            <input type="text" class="form-control" name="buscar" value="<%= filtros.buscar || search || '' %>" placeholder="Nombre, descripción o categoría">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" name="categoria">
+                                <option value="">Todas</option>
+                                <% categorias.forEach(cat => { %>
+                                    <option value="<%= cat.id %>" <%= (categoriaId == cat.id) ? 'selected' : '' %>><%= cat.nombre %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Ordenar por</label>
+                            <select class="form-select" name="sort">
+                                <option value="nombre_asc" <%= sortBy==='nombre_asc'?'selected':'' %>>Nombre (A-Z)</option>
+                                <option value="nombre_desc" <%= sortBy==='nombre_desc'?'selected':'' %>>Nombre (Z-A)</option>
+                                <option value="precio_asc" <%= sortBy==='precio_asc'?'selected':'' %>>Precio (menor a mayor)</option>
+                                <option value="precio_desc" <%= sortBy==='precio_desc'?'selected':'' %>>Precio (mayor a menor)</option>
+                                <option value="stock_asc" <%= sortBy==='stock_asc'?'selected':'' %>>Stock (menor a mayor)</option>
+                                <option value="stock_desc" <%= sortBy==='stock_desc'?'selected':'' %>>Stock (mayor a menor)</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary">Buscar</button>
+                            <label class="form-label">Por página</label>
+                            <select class="form-select" name="limit">
+                                <% [6,12,24,36,48].forEach(n => { %>
+                                    <option value="<%= n %>" <%= (limit==n)?'selected':'' %>><%= n %></option>
+                                <% }) %>
+                            </select>
                         </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Aplicar</button>
+                        <% if (search || categoriaId || (sortBy && sortBy!=='nombre_asc')) { %>
+                            <a href="/catalogo/productos/<%= cliente.id %>" class="btn btn-outline-secondary"><i class="fas fa-times"></i> Limpiar</a>
+                        <% } %>
                     </div>
                 </form>
             </div>
@@ -61,6 +92,9 @@
                     <% productos.forEach(producto=> { %>
                         <div class="col-md-4 mb-4">
                             <div class="card">
+                                <% if (producto.imagen) { %>
+                                    <img src="/uploads/productos/<%= producto.imagen %>" class="card-img-top" alt="<%= producto.nombre %>" onerror="this.style.display='none'"/>
+                                <% } %>
                                 <div class="card-body">
                                     <h6>
                                         <%= producto.nombre %>
@@ -69,6 +103,9 @@
                                         <%= producto.descripcion || 'Sin descripción' %>
                                     </p>
                                     <p><strong>$<%= parseFloat(producto.precio).toLocaleString() %></strong></p>
+                                    <% if (producto.categoria_nombre) { %>
+                                        <span class="badge bg-secondary"><i class="fas fa-tag"></i> <%= producto.categoria_nombre %></span>
+                                    <% } %>
                                     <div class="form-check">
                                         <input class="form-check-input producto-checkbox" type="checkbox"
                                             value="<%= producto.id %>" id="producto_<%= producto.id %>">
@@ -81,6 +118,24 @@
                         <% }); %>
                             <% } %>
         </div>
+
+        <% if (totalPages && totalPages > 1) { %>
+            <nav aria-label="Paginación" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <%= (currentPage<=1)?'disabled':'' %>">
+                        <a class="page-link" href="/catalogo/productos/<%= cliente.id %>?buscar=<%= search||'' %>&categoria=<%= categoriaId||'' %>&sort=<%= sortBy %>&limit=<%= limit %>&page=<%= currentPage-1 %>">Anterior</a>
+                    </li>
+                    <% for (let p = 1; p <= totalPages; p++) { %>
+                        <li class="page-item <%= (p===currentPage)?'active':'' %>">
+                            <a class="page-link" href="/catalogo/productos/<%= cliente.id %>?buscar=<%= search||'' %>&categoria=<%= categoriaId||'' %>&sort=<%= sortBy %>&limit=<%= limit %>&page=<%= p %>"><%= p %></a>
+                        </li>
+                    <% } %>
+                    <li class="page-item <%= (currentPage>=totalPages)?'disabled':'' %>">
+                        <a class="page-link" href="/catalogo/productos/<%= cliente.id %>?buscar=<%= search||'' %>&categoria=<%= categoriaId||'' %>&sort=<%= sortBy %>&limit=<%= limit %>&page=<%= currentPage+1 %>">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+        <% } %>
 
         <div class="text-center mt-4">
             <button type="button" class="btn btn-info me-2" id="previsualizarMensaje" disabled>
