@@ -122,7 +122,8 @@ class ClienteModel extends Model {
                 SELECT 
                     c.*,
                     COUNT(v.id) as total_compras,
-                    COALESCE(SUM(v.total_a_pagar), 0) as total_gastado
+                    COALESCE(SUM(v.total_a_pagar), 0) as total_gastado,
+                    MAX(v.fecha) as ultima_compra
                 FROM cliente c
                 LEFT JOIN venta v ON c.id = v.cliente_id
                 WHERE c.nombre ILIKE $1 OR c.celular ILIKE $1 OR c.correo ILIKE $1

@@ -43,9 +43,9 @@ class CategoriaModel extends Model {
                 SELECT 
                     c.id,
                     c.nombre,
-                    COUNT(pc.producto_id) as total_productos
+                    COUNT(p.id) as total_productos
                 FROM categoria c
-                LEFT JOIN producto_categoria pc ON c.id = pc.categoria_id
+                LEFT JOIN producto p ON p.categoria_id = c.id
                 GROUP BY c.id, c.nombre
                 ORDER BY c.nombre ASC
             `;
@@ -58,7 +58,7 @@ class CategoriaModel extends Model {
 
     async canDelete(id) {
         try {
-            const sql = 'SELECT COUNT(*) as count FROM producto_categoria WHERE categoria_id = $1';
+            const sql = 'SELECT COUNT(*) as count FROM producto WHERE categoria_id = $1';
             const result = await this.query(sql, [id]);
             return parseInt(result[0].count) === 0;
         } catch (error) {
@@ -69,7 +69,7 @@ class CategoriaModel extends Model {
 
     async deleteWithAssociations(id) {
         try {
-            await this.query('DELETE FROM producto_categoria WHERE categoria_id = $1', [id]);            
+            // Con FK RESTRICT en producto, si hay productos asociados, canDelete() lo impedirá
             await this.delete(id);
             console.log('✅ Categoría eliminada');
             return true;

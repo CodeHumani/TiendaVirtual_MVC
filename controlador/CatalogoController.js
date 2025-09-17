@@ -22,7 +22,8 @@ class CatalogoController extends Controller {
             if (search) {
                 clientes = await this.clienteModel.search(search);
             } else {
-                clientes = await this.clienteModel.getAll();
+                // Traer estadísticas para mostrar historial y última compra
+                clientes = await this.clienteModel.getAllWithStats();
             }
             res.render('catalogo/index', {
                 title: 'Catálogo - Seleccionar Cliente',

@@ -49,18 +49,11 @@ class ProductoModel extends Model {
             const sql = `
                 SELECT 
                     p.*,
-                    array_agg(
-                        CASE 
-                            WHEN c.id IS NOT NULL THEN 
-                                json_build_object('id', c.id, 'nombre', c.nombre)
-                            ELSE NULL 
-                        END
-                    ) FILTER (WHERE c.id IS NOT NULL) as categorias
+                    c.id as categoria_id,
+                    c.nombre as categoria_nombre
                 FROM producto p
-                LEFT JOIN producto_categoria pc ON p.id = pc.producto_id
-                LEFT JOIN categoria c ON pc.categoria_id = c.id
+                LEFT JOIN categoria c ON p.categoria_id = c.id
                 WHERE p.id = $1
-                GROUP BY p.id, p.nombre, p.precio, p.cantidad, p.descripcion, p.imagen
             `;
             const result = await this.query(sql, [id]);
             return result[0] || null;
@@ -75,10 +68,10 @@ class ProductoModel extends Model {
             const query = `
                 SELECT 
                     p.*,
-                    c.nombre as categoria_nombre
+                    c.nombre as categoria_nombre,
+                    c.id as categoria_id
                 FROM producto p
-                LEFT JOIN producto_categoria pc ON p.id = pc.producto_id
-                LEFT JOIN categoria c ON pc.categoria_id = c.id
+                LEFT JOIN categoria c ON p.categoria_id = c.id
                 ORDER BY p.id DESC
             `;
             const result = await this.db.query(query);
@@ -94,10 +87,10 @@ class ProductoModel extends Model {
             const query = `
                 SELECT DISTINCT
                     p.*,
-                    c.nombre as categoria_nombre
+                    c.nombre as categoria_nombre,
+                    c.id as categoria_id
                 FROM producto p
-                LEFT JOIN producto_categoria pc ON p.id = pc.producto_id
-                LEFT JOIN categoria c ON pc.categoria_id = c.id
+                LEFT JOIN categoria c ON p.categoria_id = c.id
                 WHERE 
                     LOWER(p.nombre) LIKE LOWER($1) OR 
                     LOWER(p.descripcion) LIKE LOWER($1) OR
@@ -117,11 +110,11 @@ class ProductoModel extends Model {
             const query = `
                 SELECT 
                     p.*,
-                    c.nombre as categoria_nombre
+                    c.nombre as categoria_nombre,
+                    c.id as categoria_id
                 FROM producto p
-                INNER JOIN producto_categoria pc ON p.id = pc.producto_id
-                INNER JOIN categoria c ON pc.categoria_id = c.id
-                WHERE pc.categoria_id = $1
+                INNER JOIN categoria c ON p.categoria_id = c.id
+                WHERE p.categoria_id = $1
                 ORDER BY p.nombre ASC
             `;
             const result = await this.db.query(query, [categoriaId]);
@@ -147,15 +140,10 @@ class ProductoModel extends Model {
                 descripcion: datosProducto.descripcion.trim(),
                 precio: parseFloat(datosProducto.precio),
                 cantidad: parseInt(datosProducto.stock || datosProducto.cantidad),
-                imagen: datosProducto.imagen || null
+                imagen: datosProducto.imagen || null,
+                categoria_id: parseInt(categoriaId)
             };
             const productoId = await this.create(datosLimpios);
-            if (categoriaId) {
-                await this.db.query(
-                    'INSERT INTO producto_categoria (producto_id, categoria_id) VALUES ($1, $2)',
-                    [productoId, parseInt(categoriaId)]
-                );
-            }
             return productoId;
         } catch (error) {
             console.error('Error al crear producto con categoría:', error);
@@ -178,19 +166,13 @@ class ProductoModel extends Model {
                 nombre: datosProducto.nombre.trim(),
                 descripcion: datosProducto.descripcion.trim(),
                 precio: parseFloat(datosProducto.precio),
-                cantidad: parseInt(datosProducto.stock || datosProducto.cantidad)
+                cantidad: parseInt(datosProducto.stock || datosProducto.cantidad),
+                categoria_id: parseInt(categoriaId)
             };
             if (datosProducto.imagen !== undefined) {
                 datosLimpios.imagen = datosProducto.imagen;
             }
             const actualizado = await this.update(id, datosLimpios);
-            if (categoriaId) {
-                await this.db.query('DELETE FROM producto_categoria WHERE producto_id = $1', [id]);                
-                await this.db.query(
-                    'INSERT INTO producto_categoria (producto_id, categoria_id) VALUES ($1, $2)',
-                    [id, parseInt(categoriaId)]
-                );
-            }
             return actualizado;
         } catch (error) {
             console.error('❌ Error en ProductoModel.actualizarConCategoria:', error);
@@ -216,7 +198,7 @@ class ProductoModel extends Model {
 
             // Filtro por categoría
             if (filtros.categoria_id) {
-                whereClauses.push(`pc.categoria_id = $${paramIndex}`);
+                whereClauses.push(`p.categoria_id = $${paramIndex}`);
                 params.push(parseInt(filtros.categoria_id));
                 paramIndex++;
             }
@@ -264,8 +246,7 @@ class ProductoModel extends Model {
                     c.nombre as categoria_nombre,
                     c.id as categoria_id
                 FROM producto p
-                LEFT JOIN producto_categoria pc ON p.id = pc.producto_id
-                LEFT JOIN categoria c ON pc.categoria_id = c.id
+                LEFT JOIN categoria c ON p.categoria_id = c.id
                 ${whereClause}
                 ORDER BY ${orderBy}
             `;

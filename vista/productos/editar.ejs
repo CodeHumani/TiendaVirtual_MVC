@@ -142,12 +142,10 @@
                                             <select class="form-select" id="categoria_id" name="categoria_id" required>
                                                 <option value="">Seleccionar categoría...</option>
                                                 <% categorias.forEach(categoria=> { %>
-                                                    <option value="<%= categoria.id %>" <%=(producto.categorias &&
-                                                        producto.categorias.some(cat=> cat.id == categoria.id)) ?
-                                                        'selected' : '' %>>
+                                                    <option value="<%= categoria.id %>" <%= (producto.categoria_id == categoria.id) ? 'selected' : '' %>>
                                                         <%= categoria.nombre %>
                                                     </option>
-                                                    <% }); %>
+                                                <% }); %>
                                             </select>
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle"></i> Categoría a la que pertenece el
@@ -163,7 +161,7 @@
                                                 class="text-danger">*</span>
                                         </label>
                                         <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
-                                            required maxlength="500"><%= producto.descripción || '' %></textarea>
+                                            required maxlength="500"><%= producto.descripcion || '' %></textarea>
                                         <div class="form-text">
                                             <i class="fas fa-info-circle"></i> Descripción detallada del producto
                                             (máximo 500 caracteres)
