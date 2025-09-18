@@ -157,7 +157,10 @@ class VentaModel extends Model {
             }
             const client = await this.db.pool.connect();
             try {
+                // Iniciamos la transacción
                 await client.query('BEGIN');
+                
+                // Obtenemos la venta actual con bloqueo para evitar condiciones de carrera
                 const ventaRowRes = await client.query(
                     'SELECT id, estado_pago FROM venta WHERE id = $1 FOR UPDATE',
                     [id]
@@ -166,23 +169,33 @@ class VentaModel extends Model {
                     throw new Error('La venta no existe');
                 }
                 const estadoAnterior = ventaRowRes.rows[0].estado_pago;
+                
+                // Obtenemos los detalles actuales
                 const detallesActualesRes = await client.query(
                     'SELECT producto_id, cantidad FROM detalle_venta WHERE venta_id = $1',
                     [id]
                 );
+                
+                // Crear mapa de detalles actuales por producto_id
                 const mapaAnterior = new Map();
                 for (const d of detallesActualesRes.rows) {
                     mapaAnterior.set(parseInt(d.producto_id), parseInt(d.cantidad));
                 }
+                
+                // Procesar los nuevos detalles
                 const nuevosDetalles = (detalles || []).map(d => ({
                     producto_id: parseInt(d.producto_id),
                     cantidad: parseInt(d.cantidad),
                     subtotal: parseFloat(d.subtotal)
                 }));
+                
+                // Crear mapa de nuevos detalles por producto_id
                 const mapaNuevo = new Map();
                 for (const d of nuevosDetalles) {
                     mapaNuevo.set(d.producto_id, (mapaNuevo.get(d.producto_id) || 0) + d.cantidad);
                 }
+                
+                // Calcular nuevo estado de pago
                 const totalPagado = parseFloat(datosVenta.total_pagado);
                 const totalAPagar = parseFloat(datosVenta.total_a_pagar);
                 const estadoNuevo = (function(tp, ta) {
@@ -190,30 +203,71 @@ class VentaModel extends Model {
                     if (tp < ta) return 'parcial';
                     return 'pagado';
                 })(totalPagado, totalAPagar);
+                
+                // Verificamos si estamos reactivando una venta cancelada
                 const reactivando = (estadoAnterior === 'cancelado' && estadoNuevo !== 'cancelado');
-                const deducciones = []; // { producto_id, cantidad }
+                
+                // Procesamos cambios de stock
                 const productoIds = new Set([...mapaAnterior.keys(), ...mapaNuevo.keys()]);
+                
+                // Para cada producto en la venta (tanto antiguo como nuevo)
                 for (const pid of productoIds) {
-                    const antes = mapaAnterior.get(pid) || 0;
-                    const nuevo = mapaNuevo.get(pid) || 0;
-                    const aDescontar = reactivando ? nuevo : Math.max(0, nuevo - antes);
-                    if (aDescontar > 0) {
-                        deducciones.push({ producto_id: pid, cantidad: aDescontar });
-                    }
-                }
-                for (const d of deducciones) {
-                    const res = await client.query(
+                    const cantidadAnterior = mapaAnterior.get(pid) || 0;
+                    const cantidadNueva = mapaNuevo.get(pid) || 0;
+                    
+                    // Obtenemos el stock actual del producto con bloqueo
+                    const stockRes = await client.query(
                         'SELECT cantidad FROM producto WHERE id = $1 FOR UPDATE',
-                        [d.producto_id]
+                        [pid]
                     );
-                    if (res.rowCount === 0) {
-                        throw new Error(`Producto ${d.producto_id} no existe`);
+                    if (stockRes.rowCount === 0) {
+                        throw new Error(`Producto ${pid} no existe`);
                     }
-                    const disponible = parseInt(res.rows[0].cantidad);
-                    if (disponible < d.cantidad) {
-                        throw new Error(`Stock insuficiente para el producto ${d.producto_id}. Disponible: ${disponible}, requerido: ${d.cantidad}`);
+                    let stockActual = parseInt(stockRes.rows[0].cantidad);
+                    
+                    // Caso 1: Si la venta estaba cancelada y se reactiva
+                    if (reactivando) {
+                        // Verificamos si hay suficiente stock para los nuevos detalles
+                        if (stockActual < cantidadNueva) {
+                            throw new Error(`Stock insuficiente para el producto ${pid}. Disponible: ${stockActual}, requerido: ${cantidadNueva}`);
+                        }
+                        // Descontamos todo el stock necesario
+                        if (cantidadNueva > 0) {
+                            await client.query(
+                                'UPDATE producto SET cantidad = cantidad - $1 WHERE id = $2',
+                                [cantidadNueva, pid]
+                            );
+                        }
+                    } 
+                    // Caso 2: Cambios normales (no reactivación)
+                    else {
+                        // Si el producto ya no está en la venta o tiene menos cantidad
+                        if (cantidadNueva < cantidadAnterior) {
+                            // Devolvemos la diferencia al stock
+                            const cantidadADevolver = cantidadAnterior - cantidadNueva;
+                            await client.query(
+                                'UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2',
+                                [cantidadADevolver, pid]
+                            );
+                        } 
+                        // Si el producto tiene más cantidad que antes
+                        else if (cantidadNueva > cantidadAnterior) {
+                            // Verificamos si hay suficiente stock
+                            const cantidadADisminuir = cantidadNueva - cantidadAnterior;
+                            if (stockActual < cantidadADisminuir) {
+                                throw new Error(`Stock insuficiente para el producto ${pid}. Disponible: ${stockActual}, requerido: ${cantidadADisminuir}`);
+                            }
+                            // Descontamos la diferencia
+                            await client.query(
+                                'UPDATE producto SET cantidad = cantidad - $1 WHERE id = $2',
+                                [cantidadADisminuir, pid]
+                            );
+                        }
+                        // Si la cantidad es la misma, no hay cambios en el stock
                     }
                 }
+                
+                // Actualizamos los datos de la venta
                 const datosLimpios = {
                     cliente_id: parseInt(datosVenta.cliente_id),
                     fecha: datosVenta.fecha,
@@ -223,29 +277,33 @@ class VentaModel extends Model {
                     cambio: totalPagado - totalAPagar,
                     estado_pago: estadoNuevo
                 };
+                
+                // Preparamos la consulta SQL para actualizar la venta
                 const fields = Object.keys(datosLimpios);
                 const setSql = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
                 const values = [...Object.values(datosLimpios), id];
                 await client.query(`UPDATE venta SET ${setSql} WHERE id = $${values.length}`, values);
+                
+                // Eliminamos todos los detalles antiguos
                 await client.query('DELETE FROM detalle_venta WHERE venta_id = $1', [id]);
+                
+                // Insertamos los nuevos detalles
                 for (const d of nuevosDetalles) {
                     await client.query(
                         'INSERT INTO detalle_venta (producto_id, venta_id, cantidad, subtotal) VALUES ($1, $2, $3, $4)',
                         [d.producto_id, id, d.cantidad, d.subtotal]
                     );
                 }
-                for (const d of deducciones) {
-                    const upd = await client.query(
-                        'UPDATE producto SET cantidad = cantidad - $1 WHERE id = $2',
-                        [d.cantidad, d.producto_id]
-                    );
-                }
+                
+                // Confirmamos la transacción
                 await client.query('COMMIT');
                 return true;
             } catch (txErr) {
+                // En caso de error, revertimos la transacción
                 try { await client.query('ROLLBACK'); } catch (_) {}
                 throw txErr;
             } finally {
+                // Liberamos el cliente
                 client.release();
             }
         } catch (error) {
@@ -256,17 +314,50 @@ class VentaModel extends Model {
 
     async eliminarConDetalles(id) {
         try {
+            // Obtenemos la venta con sus detalles
             const venta = await this.obtenerPorIdConDetalles(id);
             if (!venta) {
                 throw new Error('La venta no existe');
             }
-            for (const detalle of venta.detalles) {
-                await this.db.query(
-                    'UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2',
-                    [detalle.cantidad, detalle.producto_id]
-                );
+            
+            // Usamos una transacción para garantizar la consistencia
+            if (!this.db.pool) {
+                await this.db.connect();
             }
-            return await this.delete(id);
+            const client = await this.db.pool.connect();
+            
+            try {
+                // Iniciamos la transacción
+                await client.query('BEGIN');
+                
+                // Si la venta no está cancelada, devolvemos el stock
+                if (venta.estado_pago !== 'cancelado') {
+                    for (const detalle of venta.detalles) {
+                        // Actualizamos el stock con bloqueo para evitar condiciones de carrera
+                        await client.query(
+                            'UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2',
+                            [detalle.cantidad, detalle.producto_id]
+                        );
+                    }
+                }
+                
+                // Eliminamos los detalles
+                await client.query('DELETE FROM detalle_venta WHERE venta_id = $1', [id]);
+                
+                // Eliminamos la venta
+                await client.query('DELETE FROM venta WHERE id = $1', [id]);
+                
+                // Confirmamos la transacción
+                await client.query('COMMIT');
+                return true;
+            } catch (error) {
+                // En caso de error, revertimos la transacción
+                try { await client.query('ROLLBACK'); } catch (_) {}
+                throw error;
+            } finally {
+                // Liberamos el cliente
+                client.release();
+            }
         } catch (error) {
             console.error('Error al eliminar venta con detalles:', error);
             throw error;
@@ -448,14 +539,59 @@ module.exports = VentaModel;
 
 VentaModel.prototype.cancelar = async function(id) {
     try {
+        // Obtenemos la venta con sus detalles
         const venta = await this.obtenerPorIdConDetalles(id);
         if (!venta) throw new Error('La venta no existe');
         if (venta.estado_pago === 'cancelado') return false;
-        for (const detalle of (venta.detalles || [])) {
-            await this.db.query('UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2', [detalle.cantidad, detalle.producto_id]);
+        
+        // Usamos una transacción para garantizar la consistencia
+        if (!this.db.pool) {
+            await this.db.connect();
         }
-        await this.update(id, { estado_pago: 'cancelado' });
-        return true;
+        const client = await this.db.pool.connect();
+        
+        try {
+            // Iniciamos la transacción
+            await client.query('BEGIN');
+            
+            // Obtenemos la venta con bloqueo
+            const ventaRes = await client.query(
+                'SELECT id, estado_pago FROM venta WHERE id = $1 FOR UPDATE',
+                [id]
+            );
+            if (ventaRes.rowCount === 0) {
+                throw new Error('La venta no existe');
+            }
+            if (ventaRes.rows[0].estado_pago === 'cancelado') {
+                await client.query('COMMIT');
+                return false; // Ya estaba cancelada
+            }
+            
+            // Restauramos el stock para cada detalle
+            for (const detalle of (venta.detalles || [])) {
+                await client.query(
+                    'UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2',
+                    [detalle.cantidad, detalle.producto_id]
+                );
+            }
+            
+            // Actualizamos el estado de la venta a cancelado
+            await client.query(
+                'UPDATE venta SET estado_pago = $1 WHERE id = $2',
+                ['cancelado', id]
+            );
+            
+            // Confirmamos la transacción
+            await client.query('COMMIT');
+            return true;
+        } catch (error) {
+            // En caso de error, revertimos la transacción
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw error;
+        } finally {
+            // Liberamos el cliente
+            client.release();
+        }
     } catch (error) {
         console.error('Error al cancelar venta:', error);
         throw error;

@@ -256,7 +256,7 @@
             <input type="hidden" name="total_a_pagar" id="total_a_pagar" value="<%= venta.total_a_pagar || 0 %>">
         </form>
 
-        <!-- Datos de la venta para JavaScript (evita errores de sintaxis en linters) -->
+        <!-- Datos de la venta para JavaScript -->
         <script id="venta-detalles-data" type="application/json"><%- JSON.stringify(venta.detalles || []) %></script>
 
         <script>
