@@ -13,14 +13,12 @@ class VentaModel extends Model {
         if (!datos.total_a_pagar || parseFloat(datos.total_a_pagar) <= 0) {
             errores.push('El total a pagar debe ser mayor a 0');
         }
-        if (!datos.total_pagado || parseFloat(datos.total_pagado) < 0) {
+        if (datos.total_pagado === undefined || parseFloat(datos.total_pagado) < 0) {
             errores.push('El total pagado no puede ser negativo');
         }
         const totalAPagar = parseFloat(datos.total_a_pagar);
         const totalPagado = parseFloat(datos.total_pagado);
-        if (totalPagado < totalAPagar) {
-            errores.push('El monto pagado no puede ser menor al total a pagar');
-        }
+        // Se permiten pagos parciales: 0 <= totalPagado <= totalAPagar (o mayor si hay cambio)
         if (!datos.detalles || !Array.isArray(datos.detalles) || datos.detalles.length === 0) {
             errores.push('Debe agregar al menos un producto a la venta');
         }
@@ -119,7 +117,11 @@ class VentaModel extends Model {
                 total_a_pagar: parseFloat(datosVenta.total_a_pagar),
                 total_pagado: parseFloat(datosVenta.total_pagado),
                 cambio: parseFloat(datosVenta.total_pagado) - parseFloat(datosVenta.total_a_pagar),
-                estado_pago: parseFloat(datosVenta.total_pagado) >= parseFloat(datosVenta.total_a_pagar) ? 'pagado' : 'pendiente'
+                estado_pago: (function(tp, ta){
+                    if (tp <= 0) return 'pendiente';
+                    if (tp < ta) return 'parcial';
+                    return 'pagado';
+                })(parseFloat(datosVenta.total_pagado), parseFloat(datosVenta.total_a_pagar))
             };
             const ventaId = await this.create(datosLimpios);
             for (const detalle of detalles) {
@@ -169,7 +171,11 @@ class VentaModel extends Model {
                 total_a_pagar: parseFloat(datosVenta.total_a_pagar),
                 total_pagado: parseFloat(datosVenta.total_pagado),
                 cambio: parseFloat(datosVenta.total_pagado) - parseFloat(datosVenta.total_a_pagar),
-                estado_pago: parseFloat(datosVenta.total_pagado) >= parseFloat(datosVenta.total_a_pagar) ? 'pagado' : 'pendiente'
+                estado_pago: (function(tp, ta){
+                    if (tp <= 0) return 'pendiente';
+                    if (tp < ta) return 'parcial';
+                    return 'pagado';
+                })(parseFloat(datosVenta.total_pagado), parseFloat(datosVenta.total_a_pagar))
             };
             await this.update(id, datosLimpios);
             await this.db.query('DELETE FROM detalle_venta WHERE venta_id = $1', [id]);
@@ -222,6 +228,8 @@ class VentaModel extends Model {
                     COUNT(*) as total_ventas,
                     SUM(CASE WHEN estado_pago = 'pagado' THEN 1 ELSE 0 END) as ventas_pagadas,
                     SUM(CASE WHEN estado_pago = 'pendiente' THEN 1 ELSE 0 END) as ventas_pendientes,
+                    SUM(CASE WHEN estado_pago = 'parcial' THEN 1 ELSE 0 END) as ventas_parciales,
+                    SUM(CASE WHEN estado_pago = 'cancelado' THEN 1 ELSE 0 END) as ventas_canceladas,
                     SUM(CASE WHEN estado_pago = 'pagado' THEN total_a_pagar ELSE 0 END) as total_ingresos,
                     AVG(CASE WHEN estado_pago = 'pagado' THEN total_a_pagar ELSE NULL END) as promedio_venta
                 FROM venta
@@ -231,6 +239,8 @@ class VentaModel extends Model {
                 total_ventas: 0,
                 ventas_pagadas: 0,
                 ventas_pendientes: 0,
+                ventas_parciales: 0,
+                ventas_canceladas: 0,
                 total_ingresos: 0,
                 promedio_venta: 0
             };
@@ -389,3 +399,21 @@ class VentaModel extends Model {
 }
 
 module.exports = VentaModel;
+
+// Métodos adicionales fuera de la clase (extensión)
+VentaModel.prototype.cancelar = async function(id) {
+    try {
+        const venta = await this.obtenerPorIdConDetalles(id);
+        if (!venta) throw new Error('La venta no existe');
+        if (venta.estado_pago === 'cancelado') return false;
+        // Restaurar stock por cada detalle
+        for (const detalle of (venta.detalles || [])) {
+            await this.db.query('UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2', [detalle.cantidad, detalle.producto_id]);
+        }
+        await this.update(id, { estado_pago: 'cancelado' });
+        return true;
+    } catch (error) {
+        console.error('Error al cancelar venta:', error);
+        throw error;
+    }
+};

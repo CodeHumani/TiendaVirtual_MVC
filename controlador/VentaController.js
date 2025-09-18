@@ -251,6 +251,23 @@ class VentaController extends Controller {
         }
     }
 
+    async cancelar(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            if (!id || id <= 0) {
+                return res.status(400).json({ success: false, mensaje: 'ID inválido' });
+            }
+            const ok = await this.ventaModel.cancelar(id);
+            if (!ok) {
+                return res.status(200).json({ success: true, mensaje: `La venta #${id} ya se encontraba cancelada` });
+            }
+            return res.json({ success: true, mensaje: `Venta #${id} cancelada y stock restaurado` });
+        } catch (error) {
+            console.error('Error en cancelar venta:', error);
+            res.status(500).json({ success: false, mensaje: 'Error al cancelar la venta', error: error.message });
+        }
+    }
+
     async apiProductos(req, res) {
         try {
             const productos = await this.productoModel.obtenerTodosConCategoria();

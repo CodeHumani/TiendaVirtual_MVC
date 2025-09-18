@@ -165,6 +165,7 @@ app.get('/ventas/:id', (req, res) => ventaController.ver(req, res));
 app.get('/ventas/:id/editar', (req, res) => ventaController.editar(req, res));
 app.put('/ventas/:id', (req, res) => ventaController.actualizar(req, res));
 app.delete('/ventas/:id', (req, res) => ventaController.eliminar(req, res));
+app.post('/ventas/:id/cancelar', (req, res) => ventaController.cancelar(req, res));
 
 // APIs adicionales para ventas
 app.get('/api/ventas/productos', (req, res) => ventaController.apiProductos(req, res));
