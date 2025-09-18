@@ -151,18 +151,10 @@ class ClienteModel extends Conexion {
 
     formatPhoneForWhatsApp(celular) {
         if (!celular) {
-            console.log('❌ Número de celular vacío');
             return null;
         }
         const cleanPhone = celular.replace(/\D/g, '');
-        
-        console.log('📞 Formateando número para WhatsApp:', {
-            original: celular,
-            limpio: cleanPhone,
-            longitud: cleanPhone.length
-        });
         if (cleanPhone.length < 8 || cleanPhone.length > 15) {
-            console.log('❌ Longitud de número inválida:', cleanPhone.length);
             return null;
         }
         const knownCountryCodes = ['502', '591', '593', '51', '57', '58', '56', '54'];

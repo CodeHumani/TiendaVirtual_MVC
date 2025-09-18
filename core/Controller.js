@@ -5,7 +5,7 @@ class Controller {
 
     render(res, view, data = {}) {
         const viewData = {
-            title: 'Tienda Virtual MVC',
+            title: 'Tienda Virtual',
             ...data
         };
         res.render(view, viewData);

@@ -23,12 +23,10 @@ class CategoriaModel extends Conexion {
         try {
             let sql = 'SELECT id FROM categoria WHERE nombre = $1';
             let params = [nombre.trim()];
-
             if (excludeId) {
                 sql += ' AND id != $2';
                 params.push(excludeId);
             }
-
             const result = await this.query(sql, params);
             return result.length > 0;
         } catch (error) {

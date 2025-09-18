@@ -84,7 +84,7 @@ function showMotivationalTooltip(element) {
         '¡Excelente trabajo!',
         '¡Sigue así!',
         '¡Eres increíble!',
-        '¡Gran sistema MVC!',
+        '¡Gran sistema!',
         '¡Node.js es genial!',
         '¡PostgreSQL rocks!'
     ];

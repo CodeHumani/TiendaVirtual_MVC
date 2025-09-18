@@ -13,7 +13,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-store"></i> Tienda Virtual MVC
+                <i class="fas fa-store"></i> Tienda Virtual
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -182,7 +182,7 @@
     <!-- Footer -->
     <footer class="bg-dark text-white text-center py-3 mt-5">
         <div class="container">
-            <p>&copy; <%= new Date().getFullYear() %> Tienda Virtual MVC - Proyecto Académico</p>
+            <p>&copy; <%= new Date().getFullYear() %> Tienda Virtual - Proyecto Académico</p>
         </div>
     </footer>
 
@@ -190,10 +190,8 @@
     <script src="/js/motivational-effects.js"></script>
 
     <script>
-        // Validación en tiempo real del formato de celular
         document.getElementById('celular').addEventListener('input', function(e) {
             const value = e.target.value;
-            // Remover caracteres no numéricos para la validación
             const cleanValue = value.replace(/\D/g, '');
             const isValid = cleanValue.length >= 10 && cleanValue.length <= 19;
             

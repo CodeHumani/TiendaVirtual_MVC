@@ -1,7 +1,7 @@
 {
-  "name": "tienda-virtual-mvc",
+  "name": "tienda-virtual",
   "version": "1.0.0",
-  "description": "Sistema de tienda virtual con MVC en Node.js - Proyecto académico",
+  "description": "Sistema de tienda virtual en Node.js con una arquitectura de software - Proyecto académico",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

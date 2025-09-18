@@ -56,10 +56,8 @@ app.use(session({
     cookie: { secure: false }
 }));
 
-// Configurar flash messages
 app.use(flash());
 
-// Middleware para hacer disponible flash en las vistas
 app.use((req, res, next) => {
     res.locals.flash = req.flash;
     next();
@@ -67,10 +65,8 @@ app.use((req, res, next) => {
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Servir archivos temporales con headers específicos para PDF
 app.use('/temp', express.static(path.join(__dirname, 'public/temp'), {
     setHeaders: (res, path) => {
         if (path.endsWith('.pdf')) {
@@ -110,7 +106,7 @@ const dashboardController = new DashboardController();
 const catalogoController = new CatalogoController();
 
 app.get('/', (req, res) => dashboardController.index(req, res));
-// Dashboard APIs y reportes
+
 app.get('/api/dashboard/datos', (req, res) => dashboardController.apiDatos(req, res));
 app.get('/reportes/dashboard.csv', (req, res) => dashboardController.exportarCSV(req, res));
 app.get('/reportes/dashboard.pdf', (req, res) => dashboardController.exportarPDF(req, res));
@@ -167,7 +163,6 @@ app.put('/ventas/:id', (req, res) => ventaController.actualizar(req, res));
 app.delete('/ventas/:id', (req, res) => ventaController.eliminar(req, res));
 app.post('/ventas/:id/cancelar', (req, res) => ventaController.cancelar(req, res));
 
-// APIs adicionales para ventas
 app.get('/api/ventas/productos', (req, res) => ventaController.apiProductos(req, res));
 app.get('/api/ventas/clientes', (req, res) => ventaController.apiClientes(req, res));
 app.get('/api/ventas/estadisticas', (req, res) => ventaController.apiEstadisticas(req, res));
