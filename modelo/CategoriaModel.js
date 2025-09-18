@@ -69,7 +69,6 @@ class CategoriaModel extends Model {
 
     async deleteWithAssociations(id) {
         try {
-            // Con FK RESTRICT en producto, si hay productos asociados, canDelete() lo impedirá
             await this.delete(id);
             console.log('✅ Categoría eliminada');
             return true;

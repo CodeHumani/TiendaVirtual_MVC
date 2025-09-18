@@ -195,15 +195,11 @@ class ProductoModel extends Model {
             let whereClauses = [];
             let params = [];
             let paramIndex = 1;
-
-            // Filtro por categoría
             if (filtros.categoria_id) {
                 whereClauses.push(`p.categoria_id = $${paramIndex}`);
                 params.push(parseInt(filtros.categoria_id));
                 paramIndex++;
             }
-
-            // Filtro por búsqueda de texto
             if (filtros.buscar) {
                 whereClauses.push(`(
                     LOWER(p.nombre) LIKE LOWER($${paramIndex}) OR 
@@ -213,11 +209,7 @@ class ProductoModel extends Model {
                 params.push(`%${filtros.buscar}%`);
                 paramIndex++;
             }
-
-            // Construir la cláusula WHERE
             const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-            // Determinar el orden
             let orderBy;
             switch (ordenar) {
                 case 'precio_asc':
@@ -238,7 +230,6 @@ class ProductoModel extends Model {
                 default:
                     orderBy = 'p.nombre ASC';
             }
-
             const query = `
                 SELECT DISTINCT
                     p.*,
@@ -250,7 +241,6 @@ class ProductoModel extends Model {
                 ${whereClause}
                 ORDER BY ${orderBy}
             `;
-
             const result = await this.db.query(query, params);
             return result;
         } catch (error) {

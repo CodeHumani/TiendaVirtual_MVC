@@ -88,7 +88,9 @@
         <% } %>
 
         <!-- Formulario de Edición de Venta -->
-        <form method="POST" action="/ventas/<%= venta.id %>?_method=PUT" id="formVenta">
+        <form method="POST" action="/ventas/<%= venta.id %>" id="formVenta">
+            <!-- Method override for PUT -->
+            <input type="hidden" name="_method" value="PUT">
             <div class="row">
                 <!-- Información de la Venta -->
                 <div class="col-lg-4">
@@ -129,11 +131,11 @@
                                 <label for="fecha" class="form-label">
                                     <i class="fas fa-calendar"></i> Fecha
                                 </label>
-                                <input type="date" 
-                                       name="fecha" 
-                                       id="fecha" 
-                                       class="form-control"
-                                       value="<%= new Date(venta.fecha).toISOString().split('T')[0] %>">
+                    <input type="date" 
+                        name="fecha" 
+                        id="fecha" 
+                        class="form-control"
+                        value="<%= venta.fecha ? new Date(venta.fecha).toISOString().split('T')[0] : '' %>">
                             </div>
 
                             <!-- Resumen de Totales -->
@@ -254,14 +256,22 @@
             <input type="hidden" name="total_a_pagar" id="total_a_pagar" value="<%= venta.total_a_pagar || 0 %>">
         </form>
 
-        <!-- Datos de la venta para JavaScript -->
-        <script>
-            window.ventaDetalles = <%- JSON.stringify(venta.detalles || []) %>;
-        </script>
+        <!-- Datos de la venta para JavaScript (evita errores de sintaxis en linters) -->
+        <script id="venta-detalles-data" type="application/json"><%- JSON.stringify(venta.detalles || []) %></script>
 
         <script>
         let productosEnVenta = [];
         let contadorProductos = 0;
+        // Cargar detalles desde el bloque JSON embebido
+        (function cargarVentaDetalles() {
+            try {
+                const el = document.getElementById('venta-detalles-data');
+                const texto = (el && el.textContent) ? el.textContent : '[]';
+                window.ventaDetalles = JSON.parse(texto);
+            } catch (e) {
+                window.ventaDetalles = [];
+            }
+        })();
 
         document.addEventListener('DOMContentLoaded', function() {
             // Cargar productos existentes desde los datos de la venta

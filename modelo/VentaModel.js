@@ -18,7 +18,6 @@ class VentaModel extends Model {
         }
         const totalAPagar = parseFloat(datos.total_a_pagar);
         const totalPagado = parseFloat(datos.total_pagado);
-        // Se permiten pagos parciales: 0 <= totalPagado <= totalAPagar (o mayor si hay cambio)
         if (!datos.detalles || !Array.isArray(datos.detalles) || datos.detalles.length === 0) {
             errores.push('Debe agregar al menos un producto a la venta');
         }
@@ -94,7 +93,6 @@ class VentaModel extends Model {
             }
             const venta = ventaResult[0];
             venta.detalles = detallesResult || [];
-            // Asegurar que el cambio sea un número válido
             venta.cambio = parseFloat(venta.cambio) || 0;
             return venta;
         } catch (error) {
@@ -154,48 +152,102 @@ class VentaModel extends Model {
             if (errores.length > 0) {
                 throw new Error(errores.join(', '));
             }
-            const ventaActual = await this.obtenerPorIdConDetalles(id);
-            if (!ventaActual) {
-                throw new Error('La venta no existe');
+            if (!this.db.pool) {
+                await this.db.connect();
             }
-            for (const detalleActual of ventaActual.detalles) {
-                await this.db.query(
-                    'UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2',
-                    [detalleActual.cantidad, detalleActual.producto_id]
+            const client = await this.db.pool.connect();
+            try {
+                await client.query('BEGIN');
+                const ventaRowRes = await client.query(
+                    'SELECT id, estado_pago FROM venta WHERE id = $1 FOR UPDATE',
+                    [id]
                 );
-            }
-            const datosLimpios = {
-                cliente_id: parseInt(datosVenta.cliente_id),
-                fecha: datosVenta.fecha,
-                cantidad: parseInt(datosVenta.cantidad) || detalles.length,
-                total_a_pagar: parseFloat(datosVenta.total_a_pagar),
-                total_pagado: parseFloat(datosVenta.total_pagado),
-                cambio: parseFloat(datosVenta.total_pagado) - parseFloat(datosVenta.total_a_pagar),
-                estado_pago: (function(tp, ta){
+                if (ventaRowRes.rowCount === 0) {
+                    throw new Error('La venta no existe');
+                }
+                const estadoAnterior = ventaRowRes.rows[0].estado_pago;
+                const detallesActualesRes = await client.query(
+                    'SELECT producto_id, cantidad FROM detalle_venta WHERE venta_id = $1',
+                    [id]
+                );
+                const mapaAnterior = new Map();
+                for (const d of detallesActualesRes.rows) {
+                    mapaAnterior.set(parseInt(d.producto_id), parseInt(d.cantidad));
+                }
+                const nuevosDetalles = (detalles || []).map(d => ({
+                    producto_id: parseInt(d.producto_id),
+                    cantidad: parseInt(d.cantidad),
+                    subtotal: parseFloat(d.subtotal)
+                }));
+                const mapaNuevo = new Map();
+                for (const d of nuevosDetalles) {
+                    mapaNuevo.set(d.producto_id, (mapaNuevo.get(d.producto_id) || 0) + d.cantidad);
+                }
+                const totalPagado = parseFloat(datosVenta.total_pagado);
+                const totalAPagar = parseFloat(datosVenta.total_a_pagar);
+                const estadoNuevo = (function(tp, ta) {
                     if (tp <= 0) return 'pendiente';
                     if (tp < ta) return 'parcial';
                     return 'pagado';
-                })(parseFloat(datosVenta.total_pagado), parseFloat(datosVenta.total_a_pagar))
-            };
-            await this.update(id, datosLimpios);
-            await this.db.query('DELETE FROM detalle_venta WHERE venta_id = $1', [id]);
-            for (const detalle of detalles) {
-                const detalleData = {
-                    producto_id: parseInt(detalle.producto_id),
-                    venta_id: id,
-                    cantidad: parseInt(detalle.cantidad),
-                    subtotal: parseFloat(detalle.subtotal)
+                })(totalPagado, totalAPagar);
+                const reactivando = (estadoAnterior === 'cancelado' && estadoNuevo !== 'cancelado');
+                const deducciones = []; // { producto_id, cantidad }
+                const productoIds = new Set([...mapaAnterior.keys(), ...mapaNuevo.keys()]);
+                for (const pid of productoIds) {
+                    const antes = mapaAnterior.get(pid) || 0;
+                    const nuevo = mapaNuevo.get(pid) || 0;
+                    const aDescontar = reactivando ? nuevo : Math.max(0, nuevo - antes);
+                    if (aDescontar > 0) {
+                        deducciones.push({ producto_id: pid, cantidad: aDescontar });
+                    }
+                }
+                for (const d of deducciones) {
+                    const res = await client.query(
+                        'SELECT cantidad FROM producto WHERE id = $1 FOR UPDATE',
+                        [d.producto_id]
+                    );
+                    if (res.rowCount === 0) {
+                        throw new Error(`Producto ${d.producto_id} no existe`);
+                    }
+                    const disponible = parseInt(res.rows[0].cantidad);
+                    if (disponible < d.cantidad) {
+                        throw new Error(`Stock insuficiente para el producto ${d.producto_id}. Disponible: ${disponible}, requerido: ${d.cantidad}`);
+                    }
+                }
+                const datosLimpios = {
+                    cliente_id: parseInt(datosVenta.cliente_id),
+                    fecha: datosVenta.fecha,
+                    cantidad: parseInt(datosVenta.cantidad) || nuevosDetalles.length,
+                    total_a_pagar: totalAPagar,
+                    total_pagado: totalPagado,
+                    cambio: totalPagado - totalAPagar,
+                    estado_pago: estadoNuevo
                 };
-                await this.db.query(
-                    'INSERT INTO detalle_venta (producto_id, venta_id, cantidad, subtotal) VALUES ($1, $2, $3, $4)',
-                    [detalleData.producto_id, detalleData.venta_id, detalleData.cantidad, detalleData.subtotal]
-                );
-                await this.db.query(
-                    'UPDATE producto SET cantidad = cantidad - $1 WHERE id = $2',
-                    [detalleData.cantidad, detalleData.producto_id]
-                );
+                const fields = Object.keys(datosLimpios);
+                const setSql = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+                const values = [...Object.values(datosLimpios), id];
+                await client.query(`UPDATE venta SET ${setSql} WHERE id = $${values.length}`, values);
+                await client.query('DELETE FROM detalle_venta WHERE venta_id = $1', [id]);
+                for (const d of nuevosDetalles) {
+                    await client.query(
+                        'INSERT INTO detalle_venta (producto_id, venta_id, cantidad, subtotal) VALUES ($1, $2, $3, $4)',
+                        [d.producto_id, id, d.cantidad, d.subtotal]
+                    );
+                }
+                for (const d of deducciones) {
+                    const upd = await client.query(
+                        'UPDATE producto SET cantidad = cantidad - $1 WHERE id = $2',
+                        [d.cantidad, d.producto_id]
+                    );
+                }
+                await client.query('COMMIT');
+                return true;
+            } catch (txErr) {
+                try { await client.query('ROLLBACK'); } catch (_) {}
+                throw txErr;
+            } finally {
+                client.release();
             }
-            return true;
         } catch (error) {
             console.error('Error al actualizar venta con detalles:', error);
             throw error;
@@ -250,7 +302,6 @@ class VentaModel extends Model {
         }
     }
 
-    // Utilidad: normalizar rango de fechas (opcional)
     _normalizarRango(fechaInicio, fechaFin) {
         let start = fechaInicio ? new Date(fechaInicio) : null;
         let end = fechaFin ? new Date(fechaFin) : null;
@@ -259,7 +310,6 @@ class VentaModel extends Model {
         return { start, end };
     }
 
-    // KPIs en rango de fechas
     async resumen(fechaInicio, fechaFin) {
         const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
         const filtros = [];
@@ -287,7 +337,6 @@ class VentaModel extends Model {
         return row || { total_ventas: 0, ventas_pagadas: 0, ventas_pendientes: 0, total_ingresos: 0, promedio_venta: 0 };
     }
 
-    // Ventas por día (serie temporal)
     async ventasDiarias(fechaInicio, fechaFin) {
         const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
         const filtros = [];
@@ -307,7 +356,6 @@ class VentaModel extends Model {
         return await this.query(sql, params);
     }
 
-    // Ventas por mes para un año dado
     async ventasPorMes(anio) {
         const year = parseInt(anio) || new Date().getFullYear();
         const sql = `
@@ -323,7 +371,6 @@ class VentaModel extends Model {
         return await this.query(sql, [year]);
     }
 
-    // Ventas por categoría en rango (usa subtotales de detalle_venta)
     async ventasPorCategoria(fechaInicio, fechaFin) {
         const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
         const filtros = [];
@@ -347,7 +394,6 @@ class VentaModel extends Model {
         return await this.query(sql, params);
     }
 
-    // Top productos por cantidad vendida en rango
     async topProductos(fechaInicio, fechaFin, limit = 5) {
         const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
         const filtros = [];
@@ -400,13 +446,11 @@ class VentaModel extends Model {
 
 module.exports = VentaModel;
 
-// Métodos adicionales fuera de la clase (extensión)
 VentaModel.prototype.cancelar = async function(id) {
     try {
         const venta = await this.obtenerPorIdConDetalles(id);
         if (!venta) throw new Error('La venta no existe');
         if (venta.estado_pago === 'cancelado') return false;
-        // Restaurar stock por cada detalle
         for (const detalle of (venta.detalles || [])) {
             await this.db.query('UPDATE producto SET cantidad = cantidad + $1 WHERE id = $2', [detalle.cantidad, detalle.producto_id]);
         }

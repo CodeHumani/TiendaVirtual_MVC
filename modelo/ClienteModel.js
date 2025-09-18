@@ -154,7 +154,6 @@ class ClienteModel extends Model {
             console.log('❌ Número de celular vacío');
             return null;
         }
-
         const cleanPhone = celular.replace(/\D/g, '');
         
         console.log('📞 Formateando número para WhatsApp:', {
@@ -162,50 +161,31 @@ class ClienteModel extends Model {
             limpio: cleanPhone,
             longitud: cleanPhone.length
         });
-        
-        // Validar que el número tenga una longitud razonable
         if (cleanPhone.length < 8 || cleanPhone.length > 15) {
             console.log('❌ Longitud de número inválida:', cleanPhone.length);
             return null;
         }
-        
-        // Si ya incluye código de país conocido, devolverlo tal como está
         const knownCountryCodes = ['502', '591', '593', '51', '57', '58', '56', '54'];
         for (const code of knownCountryCodes) {
             if (cleanPhone.startsWith(code)) {
-                console.log(`✅ Número con código ${code} detectado`);
                 return cleanPhone;
             }
         }
-        
-        // Si es un número guatemalteco de 8 dígitos que empieza con 3, 4, 5, 7 o 9
         if (cleanPhone.length === 8 && /^[34579]/.test(cleanPhone)) {
-            console.log('✅ Número guatemalteco detectado, agregando código 502');
             return `502${cleanPhone}`;
         }
-        
-        // Para números de EE.UU./Canadá (10-11 dígitos empezando con 1)
         if (cleanPhone.length === 10 && /^[2-9]/.test(cleanPhone)) {
-            console.log('✅ Número norteamericano de 10 dígitos, agregando código 1');
             return `1${cleanPhone}`;
         }
-        
         if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) {
-            console.log('✅ Número norteamericano con código 1 detectado');
             return cleanPhone;
-        }
-        
-        // Para otros formatos internacionales de 10-15 dígitos
+        }        
         if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
-            console.log('✅ Número internacional válido, usando tal como está');
             return cleanPhone;
         }
-        
-        console.log('⚠️ Formato de número no reconocido');
-        return cleanPhone; // Devolver limpio en caso de duda
+        return cleanPhone;
     }
 
-    // Método para validar número de WhatsApp
     isValidWhatsAppNumber(celular) {
         const formattedPhone = this.formatPhoneForWhatsApp(celular);
         return formattedPhone !== null && formattedPhone.length >= 10 && formattedPhone.length <= 15;
