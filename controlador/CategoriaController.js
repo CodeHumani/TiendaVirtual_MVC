@@ -17,17 +17,14 @@ class CategoriaController extends Controller {
             let categorias;
             if (buscar.trim()) {
                 categorias = await this.model.search(buscar.trim());
-                console.log('🔍 Búsqueda realizada:', buscar, '- Resultados:', categorias.length);
             } else {
                 categorias = await this.model.getAll();
-                console.log('📊 Categorías obtenidas:', categorias.length);
             }
             this.render(res, 'categorias/index', { 
                 categorias,
                 buscar,
                 title: 'Gestión de Categorías'
-            });            
-            console.log('✅ CategoriaController.index - Vista renderizada');
+            });
         } catch (error) {
             console.error('❌ Error en CategoriaController.index:', error);
             this.handleError(res, error, 'Error al obtener las categorías');
@@ -36,18 +33,11 @@ class CategoriaController extends Controller {
 
     async create(req, res) {
         try {
-            console.log('🔧 CategoriaController.create - Iniciando...');
-            console.log('📊 Datos a pasar a la vista:', {
-                title: 'Crear Nueva Categoría',
-                categoria: {},
-                errors: []
-            });
             this.render(res, 'categorias/crear', {
                 title: 'Crear Nueva Categoría',
                 categoria: {},
                 errors: []
             });
-            console.log('✅ CategoriaController.create - Vista renderizada');
         } catch (error) {
             console.error('❌ Error en CategoriaController.create:', error);
             this.handleError(res, error);
@@ -152,18 +142,15 @@ class CategoriaController extends Controller {
 
     async destroy(req, res) {
         try {
-            console.log('🗑️ CategoriaController.destroy - Iniciando...');
             const id = req.params.id;
             const categoria = await this.model.getById(id);
             if (!categoria) {
-                console.log('❌ Categoría no encontrada');
                 return res.status(404).json({ 
                     exito: false,
                     error: 'Categoría no encontrada' 
                 });
             }
             await this.model.deleteWithAssociations(id);
-            console.log('✅ Categoría eliminada exitosamente');
             return res.status(200).json({
                 exito: true,
                 mensaje: 'Categoría eliminada exitosamente'

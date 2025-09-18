@@ -79,7 +79,6 @@
             </div>
         </div>
 
-        <!-- Mostrar errores -->
         <% if (typeof error !== 'undefined' && error) { %>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-triangle"></i> <%= error %>
@@ -87,12 +86,9 @@
         </div>
         <% } %>
 
-        <!-- Formulario de Edición de Venta -->
         <form method="POST" action="/ventas/<%= venta.id %>" id="formVenta">
-            <!-- Method override for PUT -->
             <input type="hidden" name="_method" value="PUT">
             <div class="row">
-                <!-- Información de la Venta -->
                 <div class="col-lg-4">
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-primary text-white">
@@ -126,7 +122,6 @@
                                 </select>
                             </div>
 
-                            <!-- Fecha -->
                             <div class="mb-3">
                                 <label for="fecha" class="form-label">
                                     <i class="fas fa-calendar"></i> Fecha
@@ -138,7 +133,6 @@
                         value="<%= venta.fecha ? new Date(venta.fecha).toISOString().split('T')[0] : '' %>">
                             </div>
 
-                            <!-- Resumen de Totales -->
                             <div class="border-top pt-3">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Total a Pagar:</span>
@@ -166,7 +160,6 @@
                     </div>
                 </div>
 
-                <!-- Productos de la Venta -->
                 <div class="col-lg-8">
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-success text-white">
@@ -175,7 +168,6 @@
                             </h5>
                         </div>
                         <div class="card-body">
-                            <!-- Selector de Productos -->
                             <div class="row mb-3">
                                 <div class="col-md-8">
                                     <label for="producto_select" class="form-label">
@@ -211,7 +203,6 @@
                                 </div>
                             </div>
 
-                            <!-- Lista de Productos Agregados -->
                             <div id="productosVenta">
                                 <div class="table-responsive">
                                     <table class="table table-sm">
@@ -225,7 +216,6 @@
                                             </tr>
                                         </thead>
                                         <tbody id="tablaProductos">
-                                            <!-- Los productos se cargan dinámicamente aquí -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -251,14 +241,10 @@
                 </div>
             </div>
 
-            <!-- Campos ocultos para los productos -->
             <div id="productosOcultos"></div>
             <input type="hidden" name="total_a_pagar" id="total_a_pagar" value="<%= venta.total_a_pagar || 0 %>">
         </form>
-
-        <!-- Datos de la venta para JavaScript -->
         <script id="venta-detalles-data" type="application/json"><%- JSON.stringify(venta.detalles || []) %></script>
-
         <script>
         let productosEnVenta = [];
         let contadorProductos = 0;
@@ -289,7 +275,6 @@
 
             actualizarInterfaz();
             
-            // Event listeners
             document.getElementById('agregarProducto').addEventListener('click', agregarProducto);
             document.getElementById('total_pagado').addEventListener('input', calcularCambio);
             document.getElementById('producto_select').addEventListener('change', function() {
@@ -302,31 +287,24 @@
         function agregarProducto() {
             const selectProducto = document.getElementById('producto_select');
             const cantidadInput = document.getElementById('cantidad_producto');
-            
             if (!selectProducto.value) {
                 alert('Selecciona un producto');
                 return;
             }
-
             const productoId = parseInt(selectProducto.value);
             const cantidad = parseInt(cantidadInput.value);
             const option = selectProducto.selectedOptions[0];
             const nombre = option.dataset.nombre;
             const precio = parseFloat(option.dataset.precio);
             const stock = parseInt(option.dataset.stock);
-
-            // Validaciones
             if (cantidad <= 0) {
                 alert('La cantidad debe ser mayor a 0');
                 return;
             }
-
             if (cantidad > stock) {
                 alert(`Solo hay ${stock} unidades disponibles`);
                 return;
             }
-
-            // Verificar si el producto ya está en la venta
             const productoExistente = productosEnVenta.find(p => p.id === productoId);
             if (productoExistente) {
                 const nuevaCantidad = productoExistente.cantidad + cantidad;
@@ -345,11 +323,8 @@
                     subtotal: cantidad * precio
                 });
             }
-
-            // Limpiar selección
             selectProducto.value = '';
             cantidadInput.value = 1;
-
             actualizarInterfaz();
         }
 
@@ -372,20 +347,15 @@
             const sinProductos = document.getElementById('sinProductos');
             const productosOcultos = document.getElementById('productosOcultos');
             const btnGuardar = document.getElementById('btnGuardar');
-
-            // Limpiar contenido
             tablaProductos.innerHTML = '';
             productosOcultos.innerHTML = '';
-
             if (productosEnVenta.length === 0) {
                 sinProductos.style.display = 'block';
                 btnGuardar.disabled = true;
             } else {
                 sinProductos.style.display = 'none';
                 btnGuardar.disabled = false;
-
                 productosEnVenta.forEach((producto, index) => {
-                    // Crear fila en la tabla
                     const fila = document.createElement('tr');
                     fila.innerHTML = `
                         <td>${producto.nombre}</td>
@@ -408,8 +378,6 @@
                         </td>
                     `;
                     tablaProductos.appendChild(fila);
-
-                    // Crear campos ocultos
                     productosOcultos.innerHTML += `
                         <input type="hidden" name="productos[]" value="${producto.id}">
                         <input type="hidden" name="cantidades[]" value="${producto.cantidad}">
@@ -417,16 +385,13 @@
                     `;
                 });
             }
-
             calcularTotales();
         }
 
         function calcularTotales() {
             const total = productosEnVenta.reduce((sum, producto) => sum + producto.subtotal, 0);
-            
             document.getElementById('mostrarTotal').textContent = `$${total.toLocaleString()}`;
             document.getElementById('total_a_pagar').value = total;
-            
             calcularCambio();
         }
 
@@ -434,21 +399,16 @@
             const totalAPagar = parseFloat(document.getElementById('total_a_pagar').value) || 0;
             const totalPagado = parseFloat(document.getElementById('total_pagado').value) || 0;
             const cambio = Math.max(0, totalPagado - totalAPagar);
-            
             document.getElementById('mostrarCambio').textContent = `$${cambio.toLocaleString()}`;
         }
-
-        // Validación del formulario
         document.getElementById('formVenta').addEventListener('submit', function(e) {
             if (productosEnVenta.length === 0) {
                 e.preventDefault();
                 alert('Debes agregar al menos un producto a la venta');
                 return;
             }
-
             const totalPagado = parseFloat(document.getElementById('total_pagado').value) || 0;
             const totalAPagar = parseFloat(document.getElementById('total_a_pagar').value) || 0;
-
             if (totalPagado < totalAPagar) {
                 e.preventDefault();
                 alert('El monto pagado no puede ser menor al total a pagar');
@@ -456,8 +416,6 @@
             }
         });
         </script>
-
-        <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="/js/motivational-effects.js"></script>
     </main>

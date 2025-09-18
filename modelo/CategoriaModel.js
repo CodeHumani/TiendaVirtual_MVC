@@ -1,6 +1,6 @@
-const Model = require('../core/Model');
+const Conexion = require('../core/Conexion');
 
-class CategoriaModel extends Model {
+class CategoriaModel extends Conexion {
     constructor() {
         super('categoria');
     }

@@ -1,6 +1,6 @@
 const database = require('../config/database');
 
-class Model {
+class Conexion {
     constructor(tableName) {
         this.tableName = tableName;
         this.db = database;
@@ -76,4 +76,4 @@ class Model {
     }
 }
 
-module.exports = Model;
+module.exports = Conexion;
