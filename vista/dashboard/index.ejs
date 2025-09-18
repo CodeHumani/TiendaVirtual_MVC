@@ -66,15 +66,26 @@
                 <p class="text-muted mb-0">Bienvenido al sistema de gestión de tienda virtual</p>
             </div>
             <div class="text-end">
-                <small class="text-muted">
-                    <i class="fas fa-calendar-alt"></i> 
-                    <%= new Date().toLocaleDateString('es-ES', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    }) %>
-                </small>
+                <form class="row g-2" method="get" action="/">
+                    <div class="col-auto">
+                        <input type="date" class="form-control" name="desde" value="<%= (filtros && filtros.desde) || '' %>" />
+                    </div>
+                    <div class="col-auto">
+                        <input type="date" class="form-control" name="hasta" value="<%= (filtros && filtros.hasta) || '' %>" />
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" type="submit"><i class="fas fa-filter"></i> Filtrar</button>
+                    </div>
+                    <div class="col-auto">
+                        <a class="btn btn-outline-secondary" href="/"><i class="fas fa-undo"></i></a>
+                    </div>
+                </form>
+                <div class="mt-2">
+                    <div class="btn-group">
+                        <a class="btn btn-sm btn-outline-dark" href="/reportes/dashboard.csv?<% if (filtros && filtros.desde) { %>desde=<%= filtros.desde %>&<% } %><% if (filtros && filtros.hasta) { %>hasta=<%= filtros.hasta %><% } %>"><i class="fas fa-file-csv"></i> CSV</a>
+                        <a class="btn btn-sm btn-outline-dark" href="/reportes/dashboard.pdf?<% if (filtros && filtros.desde) { %>desde=<%= filtros.desde %>&<% } %><% if (filtros && filtros.hasta) { %>hasta=<%= filtros.hasta %><% } %>"><i class="fas fa-file-pdf"></i> PDF</a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -256,6 +267,30 @@
             </div>
         </div>
 
+        <!-- Gráficos -->
+        <div class="row mb-4">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <i class="fas fa-chart-area"></i> Ventas diarias
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartDiario" height="140"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie"></i> Ventas por categoría
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartCategoria" height="140"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Últimas ventas -->
         <div class="row">
             <div class="col-12">
@@ -335,7 +370,51 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/motivational-effects.js"></script>
+    <script>
+        (async function(){
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const res = await fetch(`/api/dashboard/datos?${params.toString()}`);
+                const json = await res.json();
+                if (!json.exito) return;
+                const datos = json.datos;
+
+                // Diario
+                const labelsD = (datos.serieDiaria || []).map(x => new Date(x.dia).toLocaleDateString('es-ES'));
+                const ventasD = (datos.serieDiaria || []).map(x => x.ventas);
+                const ingresosD = (datos.serieDiaria || []).map(x => x.ingresos);
+                const ctxD = document.getElementById('chartDiario').getContext('2d');
+                new Chart(ctxD, {
+                    type: 'line',
+                    data: {
+                        labels: labelsD,
+                        datasets: [
+                            { label: 'Ventas', data: ventasD, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.15)', tension: .25 },
+                            { label: 'Ingresos', data: ingresosD, borderColor: '#198754', backgroundColor: 'rgba(25,135,84,.15)', tension: .25, yAxisID: 'y1' }
+                        ]
+                    },
+                    options: { scales: { y: { beginAtZero: true }, y1: { position: 'right', beginAtZero: true } } }
+                });
+
+                // Categoría
+                const labelsC = (datos.porCategoria || []).map(x => x.categoria || 'Sin categoría');
+                const ingresosC = (datos.porCategoria || []).map(x => x.ingresos);
+                const ctxC = document.getElementById('chartCategoria').getContext('2d');
+                new Chart(ctxC, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsC,
+                        datasets: [{ data: ingresosC, backgroundColor: ['#0d6efd','#6f42c1','#d63384','#fd7e14','#198754','#20c997','#dc3545','#6610f2','#0dcaf0'] }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch (e) {
+                console.warn('Error cargando gráficos:', e);
+            }
+        })();
+    </script>
 
     <style>
         .border-left-primary {

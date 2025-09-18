@@ -16,18 +16,20 @@ class DashboardController extends Controller {
 
     async index(req, res) {
         try {
-            const stats = await this.getStatistics();
-            
+            const { desde, hasta } = req.query;
+            const stats = await this.getStatistics(desde, hasta);
+
             this.render(res, 'dashboard/index', {
                 title: 'Dashboard - Panel de Control',
-                stats
+                stats,
+                filtros: { desde: desde || '', hasta: hasta || '' }
             });
         } catch (error) {
             this.handleError(res, error, 'Error al cargar el dashboard');
         }
     }
 
-    async getStatistics() {
+    async getStatistics(desde, hasta) {
         try {
             let stats = {
                 totalCategorias: 0,
@@ -40,7 +42,11 @@ class DashboardController extends Controller {
                 ingresosMes: 0,
                 ventasMes: 0,
                 productosTopVenta: [],
-                ventasPendientes: 0
+                ventasPendientes: 0,
+                resumen: {},
+                serieDiaria: [],
+                serieMensual: [],
+                porCategoria: []
             };
 
             // Obtener estadísticas básicas
@@ -89,7 +95,7 @@ class DashboardController extends Controller {
                 console.warn('Error en ventas de hoy:', e.message); 
             }
 
-            // Ventas del mes
+            // Ventas del mes (independiente a filtros)
             try {
                 const ventasMes = await database.query(`
                     SELECT 
@@ -149,22 +155,22 @@ class DashboardController extends Controller {
                 console.warn('Error en últimas ventas:', e.message); 
             }
 
-            // Productos más vendidos
+            // Agregados con filtros
             try {
-                const productosTopVenta = await database.query(`
-                    SELECT 
-                        p.nombre,
-                        SUM(dv.cantidad) as total_vendido,
-                        COUNT(DISTINCT dv.venta_id) as veces_vendido
-                    FROM detalle_venta dv
-                    INNER JOIN producto p ON dv.producto_id = p.id
-                    GROUP BY p.id, p.nombre
-                    ORDER BY total_vendido DESC
-                    LIMIT 5
-                `);
-                stats.productosTopVenta = productosTopVenta;
-            } catch (e) { 
-                console.warn('Error en productos top venta:', e.message); 
+                const [resumen, serieDiaria, serieMensual, porCategoria, topProductos] = await Promise.all([
+                    this.ventaModel.resumen(desde, hasta),
+                    this.ventaModel.ventasDiarias(desde, hasta),
+                    this.ventaModel.ventasPorMes(new Date().getFullYear()),
+                    this.ventaModel.ventasPorCategoria(desde, hasta),
+                    this.ventaModel.topProductos(desde, hasta, 5)
+                ]);
+                stats.resumen = resumen;
+                stats.serieDiaria = serieDiaria;
+                stats.serieMensual = serieMensual;
+                stats.porCategoria = porCategoria;
+                stats.productosTopVenta = topProductos;
+            } catch (e) {
+                console.warn('Error en agregados con filtros:', e.message);
             }
 
             return stats;
@@ -181,8 +187,73 @@ class DashboardController extends Controller {
                 ingresosMes: 0,
                 ventasMes: 0,
                 productosTopVenta: [],
-                ventasPendientes: 0
+                ventasPendientes: 0,
+                resumen: {},
+                serieDiaria: [],
+                serieMensual: [],
+                porCategoria: []
             };
+        }
+    }
+
+    // Endpoints JSON para gráficos y consumo dinámico
+    async apiDatos(req, res) {
+        try {
+            const { desde, hasta } = req.query;
+            const datos = await this.getStatistics(desde, hasta);
+            res.json({ exito: true, datos });
+        } catch (error) {
+            this.handleError(res, error, 'Error al obtener datos del dashboard');
+        }
+    }
+
+    // Exportar CSV simple de ventas diarias
+    async exportarCSV(req, res) {
+        try {
+            const { desde, hasta } = req.query;
+            const filas = await this.ventaModel.ventasDiarias(desde, hasta);
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="ventas_diarias.csv"');
+            res.write('dia,ventas,ingresos\n');
+            for (const f of filas) {
+                const dia = new Date(f.dia).toISOString().slice(0,10);
+                res.write(`${dia},${f.ventas},${f.ingresos}\n`);
+            }
+            res.end();
+        } catch (error) {
+            this.handleError(res, error, 'Error al exportar CSV');
+        }
+    }
+
+    // Exportar PDF básico con PDFKit (resumen)
+    async exportarPDF(req, res) {
+        try {
+            const PDFDocument = require('pdfkit');
+            const { desde, hasta } = req.query;
+            const stats = await this.getStatistics(desde, hasta);
+            const doc = new PDFDocument({ margin: 50 });
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="reporte_dashboard.pdf"');
+            doc.pipe(res);
+            doc.fontSize(18).text('Reporte de Ventas - Dashboard', { align: 'center' });
+            doc.moveDown();
+            if (desde || hasta) {
+                doc.fontSize(10).text(`Rango: ${desde || 'inicio'} a ${hasta || 'hoy'}`, { align: 'center' });
+                doc.moveDown();
+            }
+            const kpis = stats.resumen || {};
+            doc.fontSize(12).text(`Total ventas: ${kpis.total_ventas || 0}`);
+            doc.text(`Ingresos: $${(kpis.total_ingresos || 0).toFixed(2)}`);
+            doc.text(`Promedio venta: $${(kpis.promedio_venta || 0).toFixed(2)}`);
+            doc.moveDown();
+            doc.fontSize(14).text('Ventas por categoría');
+            doc.moveDown(0.5);
+            (stats.porCategoria || []).forEach(c => {
+                doc.fontSize(10).text(`- ${c.categoria}: ${c.unidades} uds, $${(c.ingresos || 0).toFixed(2)}`);
+            });
+            doc.end();
+        } catch (error) {
+            this.handleError(res, error, 'Error al exportar PDF');
         }
     }
 }

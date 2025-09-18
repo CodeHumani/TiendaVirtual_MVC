@@ -240,6 +240,128 @@ class VentaModel extends Model {
         }
     }
 
+    // Utilidad: normalizar rango de fechas (opcional)
+    _normalizarRango(fechaInicio, fechaFin) {
+        let start = fechaInicio ? new Date(fechaInicio) : null;
+        let end = fechaFin ? new Date(fechaFin) : null;
+        if (start && isNaN(start)) start = null;
+        if (end && isNaN(end)) end = null;
+        return { start, end };
+    }
+
+    // KPIs en rango de fechas
+    async resumen(fechaInicio, fechaFin) {
+        const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
+        const filtros = [];
+        const params = [];
+        if (start) {
+            params.push(start);
+            filtros.push(`fecha >= $${params.length}`);
+        }
+        if (end) {
+            params.push(end);
+            filtros.push(`fecha <= $${params.length}`);
+        }
+        const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
+        const sql = `
+            SELECT 
+                COUNT(*)::int as total_ventas,
+                SUM(CASE WHEN estado_pago = 'pagado' THEN 1 ELSE 0 END)::int as ventas_pagadas,
+                SUM(CASE WHEN estado_pago = 'pendiente' THEN 1 ELSE 0 END)::int as ventas_pendientes,
+                COALESCE(SUM(total_a_pagar),0)::float as total_ingresos,
+                COALESCE(AVG(total_a_pagar),0)::float as promedio_venta
+            FROM venta
+            ${where}
+        `;
+        const [row] = await this.query(sql, params);
+        return row || { total_ventas: 0, ventas_pagadas: 0, ventas_pendientes: 0, total_ingresos: 0, promedio_venta: 0 };
+    }
+
+    // Ventas por día (serie temporal)
+    async ventasDiarias(fechaInicio, fechaFin) {
+        const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
+        const filtros = [];
+        const params = [];
+        if (start) { params.push(start); filtros.push(`DATE(fecha) >= DATE($${params.length})`); }
+        if (end) { params.push(end); filtros.push(`DATE(fecha) <= DATE($${params.length})`); }
+        const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
+        const sql = `
+            SELECT DATE(fecha) as dia,
+                   COUNT(*)::int as ventas,
+                   COALESCE(SUM(total_a_pagar),0)::float as ingresos
+            FROM venta
+            ${where}
+            GROUP BY DATE(fecha)
+            ORDER BY DATE(fecha)
+        `;
+        return await this.query(sql, params);
+    }
+
+    // Ventas por mes para un año dado
+    async ventasPorMes(anio) {
+        const year = parseInt(anio) || new Date().getFullYear();
+        const sql = `
+            SELECT 
+                EXTRACT(MONTH FROM fecha)::int as mes,
+                COUNT(*)::int as ventas,
+                COALESCE(SUM(total_a_pagar),0)::float as ingresos
+            FROM venta
+            WHERE EXTRACT(YEAR FROM fecha) = $1
+            GROUP BY EXTRACT(MONTH FROM fecha)
+            ORDER BY mes
+        `;
+        return await this.query(sql, [year]);
+    }
+
+    // Ventas por categoría en rango (usa subtotales de detalle_venta)
+    async ventasPorCategoria(fechaInicio, fechaFin) {
+        const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
+        const filtros = [];
+        const params = [];
+        if (start) { params.push(start); filtros.push(`v.fecha >= $${params.length}`); }
+        if (end) { params.push(end); filtros.push(`v.fecha <= $${params.length}`); }
+        const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
+        const sql = `
+            SELECT 
+                COALESCE(c.nombre,'Sin categoría') as categoria,
+                SUM(dv.cantidad)::int as unidades,
+                COALESCE(SUM(dv.subtotal),0)::float as ingresos
+            FROM detalle_venta dv
+            INNER JOIN venta v ON dv.venta_id = v.id
+            LEFT JOIN producto p ON dv.producto_id = p.id
+            LEFT JOIN categoria c ON p.categoria_id = c.id
+            ${where}
+            GROUP BY c.nombre
+            ORDER BY ingresos DESC
+        `;
+        return await this.query(sql, params);
+    }
+
+    // Top productos por cantidad vendida en rango
+    async topProductos(fechaInicio, fechaFin, limit = 5) {
+        const { start, end } = this._normalizarRango(fechaInicio, fechaFin);
+        const filtros = [];
+        const params = [];
+        if (start) { params.push(start); filtros.push(`v.fecha >= $${params.length}`); }
+        if (end) { params.push(end); filtros.push(`v.fecha <= $${params.length}`); }
+        params.push(parseInt(limit) || 5);
+        const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
+        const sql = `
+            SELECT 
+                p.nombre,
+                SUM(dv.cantidad)::int as total_vendido,
+                COALESCE(SUM(dv.subtotal),0)::float as ingresos
+            FROM detalle_venta dv
+            INNER JOIN producto p ON dv.producto_id = p.id
+            INNER JOIN venta v ON dv.venta_id = v.id
+            ${where}
+            GROUP BY p.id, p.nombre
+            ORDER BY total_vendido DESC
+            LIMIT $${params.length}
+        `;
+        return await this.query(sql, params);
+    }
+
     async buscar(termino) {
         try {
             const sql = `

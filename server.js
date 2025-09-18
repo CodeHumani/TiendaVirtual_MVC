@@ -110,6 +110,10 @@ const dashboardController = new DashboardController();
 const catalogoController = new CatalogoController();
 
 app.get('/', (req, res) => dashboardController.index(req, res));
+// Dashboard APIs y reportes
+app.get('/api/dashboard/datos', (req, res) => dashboardController.apiDatos(req, res));
+app.get('/reportes/dashboard.csv', (req, res) => dashboardController.exportarCSV(req, res));
+app.get('/reportes/dashboard.pdf', (req, res) => dashboardController.exportarPDF(req, res));
 
 app.get('/categorias', (req, res) => categoriaController.index(req, res));
 app.get('/categorias/crear', (req, res) => categoriaController.create(req, res));
